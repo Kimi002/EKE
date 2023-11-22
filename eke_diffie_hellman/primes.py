@@ -1,4 +1,5 @@
 from random import randint
+from base64 import b64encode
 
 # Generate a prime number
 def gen_prime(start, stop):
@@ -15,3 +16,6 @@ def gen_prime(start, stop):
 
     x = randint(0, len(mod_list))
     return mod_list[x]
+
+def b64e(x):
+    return b64encode(x).decode('utf-8')

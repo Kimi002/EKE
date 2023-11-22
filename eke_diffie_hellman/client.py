@@ -5,12 +5,16 @@ import getpass
 import os
 import socket
 import sys
-from base64 import b64decode
 from eke import *
 from json_mixins import JsonClient
-from primes import gen_prime
-# from Crypto.Cipher import AES
-# from Crypto.Random import get_random_bytes
+from primes import gen_prime, b64e
+import hashlib
+from Crypto import Random
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from base64 import b64decode as b64d
+from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l
+
 
 class EKE(JsonClient):
     def __init__(self, username, password, *args, **kwargs):
@@ -18,8 +22,6 @@ class EKE(JsonClient):
 
         self.username = username
         self.password = password
-        # self.I = b2l(username.encode())
-        # self.p = b2l(password.encode())
 
 
     def register(self):
@@ -42,37 +44,43 @@ class EKE(JsonClient):
         user1 = DiffieHellman(a1,g,p)
         print("p", user1.p)
         print("g", user1.g)
-        r1 = user1.gen() # public key
+        pub_key = user1.gen() # public key
 
-        # instantiate AES with the password
-        # P = AES.new(self.password.ljust(16).encode(), AES.MODE_ECB) # leave it for now
+        # Encyption object
+        P_encrypt = AES.new(self.password.ljust(16).encode(), AES.MODE_CBC)
 
-        # send a negotiate command
-        # send A,P(Ea)
-        # self.send_json(
-        #     action="negotiate",
-        #     username=self.username,
-        #     enc_pub_key=b64e(P.encrypt(Ea.encode_public_key())),
-        #     modulus=Ea.n
-        # )
+        # # P(Ea)
+        # r1 = b64e(P.encrypt(l2b(r1)))
 
-        # send public key Ea
+        r1 = l2b(pub_key)
+        ct_bytes = P_encrypt.encrypt(pad(r1, AES.block_size))
+        iv_encypt = P_encrypt.iv
+        ct = b64e(ct_bytes)
+        print("iv",P_encrypt.iv)
+
+        # send public key P(Ea)
         self.send_json(
             action="negotiate",
             username=self.username,
-            enc_pub_key=r1,
+            enc_pub_key=ct,
+            iv=b64e(iv_encypt),
             modulus=user1.p,
             base = user1.g
         )
 
-        # receive and decrypt R
-        # decrypt P(Ea(R))
+        
         self.recv_json()
-        # key = l2b(Ea.decrypt(b2l(P.decrypt(b64d(self.data["enc_secret_key"])))))
-        # R = AES.new(key, AES.MODE_ECB)
         # recieve public key
-        key = self.data["enc_public_key"]
-        R = user1.decode_public_key(key) # secret exchange key
+        encypted_client_key = b64d(self.data["enc_pub_key"])
+        iv_decrypt = b64d(self.data["iv"])
+
+        P_decrypt = AES.new(self.password.ljust(16).encode(), AES.MODE_CBC, iv_decrypt)
+        server_key = b2l(unpad(P_decrypt.decrypt(encypted_client_key), AES.block_size))
+
+
+        R = user1.decode_public_key(server_key) # secret exchange key
+        print("client's public key is", pub_key)
+        print("server's public key is", server_key)
         print("common secret key",R)
 
         # send first challenge

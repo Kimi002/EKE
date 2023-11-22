@@ -2,12 +2,13 @@
 
 import socketserver
 import os
-from base64 import b64encode
 from eke import *
-# from Crypto.Cipher import AES
-# from Crypto.Random import get_random_bytes
 from json_mixins import JsonServerMixin
-from primes import gen_prime
+from primes import gen_prime, b64e
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad,unpad
+from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l
+from base64 import b64decode as b64d
 
 
 class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
@@ -49,36 +50,44 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         self.send_json(success=True, message=f"Successfully registered user {user}")
 
     def handle_eke_negotiate_key(self):
-        # decrypt Ea using P
-        # P = AES.new(self.database[self.data["username"]].ljust(16).encode(), AES.MODE_ECB)
-    
-        e = (self.data["enc_pub_key"])
+
+        # get client's public key, p and g
+        encypted_client_key = b64d(self.data["enc_pub_key"])
+        iv_decrypt = b64d(self.data["iv"])
         p = (self.data["modulus"])
         g = (self.data["base"])
+        pwd = self.database[self.data["username"]]
+
+        # P = AES.new(self.database[self.data["username"]].ljust(16).encode(), AES.MODE_ECB)
+        print("p,g,pwd,iv", p,g,pwd,iv_decrypt)
+
+        P_decrypt = AES.new(pwd.ljust(16).encode(), AES.MODE_CBC, iv_decrypt)
+        client_key = b2l(unpad(P_decrypt.decrypt(encypted_client_key), AES.block_size))
+
         a2 = gen_prime(1000,3000) # secret key
         user2 = DiffieHellman(a2,g,p)
+
         print("p", user2.p)
         print("g", user2.g)
-        r2 = user2.gen() # public key
+        pub_key= user2.gen() # public key
 
-        R = user2.decode_public_key(e) # secret exchange key
+        R = user2.decode_public_key(client_key) # secret exchange key
         print("generated secret key")
-        self.send_json(enc_public_key=r2)
+
+        r2 = l2b(pub_key)
+        P_encrypt = AES.new(pwd.ljust(16).encode(), AES.MODE_CBC)
+        ct_bytes = P_encrypt.encrypt(pad(r2, AES.block_size))
+        iv_encrypt = P_encrypt.iv
+        ct = b64e(ct_bytes)
+
+        # send public key to client
+        self.send_json(enc_pub_key=ct, iv=b64e(iv_encrypt))
+        print("client's public key is", client_key)
+        print("server's public key is", pub_key)
         print("secret key is",R)
-
-        # generate secret key R
-        # R = randbytes(16)
-        # Ea = RSA.from_pub_key(e, self.data["modulus"])
-        # self.send_json(enc_secret_key=b64e(P.encrypt(l2b(Ea.encrypt(b2l(R))))))
-        # x = b64e(P.encrypt(l2b(Ea.encrypt(b2l(R)))))
-
-        # transform R into a cipher instance
-        # R = AES.new(R, AES.MODE_ECB)
 
         # receive encrypted challengeA and generate challengeB
         self.recv_json()
-        # challengeA = R.decrypt(b64d(self.data["challenge_a"]))
-        # challengeB = randbytes(16)
         challengeA = user2.decrypt_string(self.data["challenge_a"], R)
         print(challengeA)
         challengeB = "byebye"

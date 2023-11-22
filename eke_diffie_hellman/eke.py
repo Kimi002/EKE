@@ -1,12 +1,4 @@
-import random
-import math
-from collections import namedtuple
-# from Crypto.Util.number import getPrime, long_to_bytes as l2b, bytes_to_long as b2l
-from base64 import b64encode, b64decode as b64d
-from random import randint
 from primes import gen_prime
-
-
 
 class DiffieHellman:
     str_dict = {'a': "101", 'b': "102", 'c': "103", 'd': "104", 'e': "105", 'f': "106", 'g': "107", 'h': "108", 
