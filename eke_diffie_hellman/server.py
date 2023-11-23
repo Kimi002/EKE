@@ -9,6 +9,7 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad,unpad
 from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l
 from base64 import b64decode as b64d
+from Crypto import Random
 
 
 class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
@@ -84,20 +85,37 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         self.send_json(enc_pub_key=ct, iv=b64e(iv_encrypt))
         print("client's public key is", client_key)
         print("server's public key is", pub_key)
-        print("secret key is",R)
+        print("common secret key is",R)
 
         # receive encrypted challengeA and generate challengeB
         self.recv_json()
-        challengeA = user2.decrypt_string(self.data["challenge_a"], R)
-        print(challengeA)
-        challengeB = "byebye"
+        encypted_challenge_A = b64d(self.data["challenge_a"])
+        iv_decrypt = b64d(self.data["iv"])
 
-        # send challengeA + challengeB
-        self.send_json(challenge_response=user2.encrypt_string(challengeA+challengeB, R))
+        R = l2b(R,16)
+        R_decrypt = AES.new(R, AES.MODE_CBC, iv_decrypt)
+        challengeA = unpad(R_decrypt.decrypt(encypted_challenge_A), AES.block_size)
+        challengeA = challengeA.decode('utf-8')
+        print(challengeA)
+
+        # send challenge A + challenge B
+        iv_encrypt = Random.get_random_bytes(16)
+        R_encrypt = AES.new(R, AES.MODE_CBC, iv_encrypt)
+        challengeB = "byebye"
+        challengeAB = challengeA.ljust(10) + challengeB.ljust(10)
+        challengeAB = bytes(challengeAB, 'utf-8')
+        encrypted_challenge_B = R_encrypt.encrypt(pad(challengeAB, AES.block_size))
+        self.send_json(challenge_b=b64e(encrypted_challenge_B), iv = b64e(iv_encrypt))
 
         # receive challengeB back again
         self.recv_json()
-        success = user2.decrypt_string(self.data["challenge_b"], R) == challengeB
+        encrypted_challenge_B = b64d(self.data["challenge_b"])
+        iv_decrypt = b64d(self.data["iv"])
+
+        R_decrypt = AES.new(R, AES.MODE_CBC, iv_decrypt)
+        challengeB_decrypted = unpad(R_decrypt.decrypt(encrypted_challenge_B), AES.block_size)
+        challengeB_decrypted = challengeB_decrypted.decode('utf-8')
+        success = challengeB_decrypted == challengeB
 
         self.send_json(success=success)
         self.R = R

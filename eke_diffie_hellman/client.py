@@ -85,24 +85,41 @@ class EKE(JsonClient):
 
         # send first challenge
         # send R(challengeA)
+        # encyption object with common secret key
+        R = l2b(R,16)
+        iv_encrypt = Random.get_random_bytes(16)
+        R_encrypt = AES.new(R, AES.MODE_CBC, iv_encrypt)
         challengeA = "hello"
-        self.send_json(challenge_a=user1.encrypt_string(challengeA,R))
+        challengeA_bytes = bytes(challengeA, 'utf-8')
+        encrypted_challenge_A = R_encrypt.encrypt(pad(challengeA_bytes, AES.block_size))
+        self.send_json(challenge_a=b64e(encrypted_challenge_A), iv = b64e(iv_encrypt))
 
         # receive challenge response
         self.recv_json()
         # decrypt R(challengeA+challengeB)
-        challenge_response = user1.decrypt_string(self.data["challenge_response"],R)
-        print("challenge response", challenge_response)
+        encypted_challenge_AB = b64d(self.data["challenge_b"])
+        iv_decrypt = b64d(self.data["iv"])
+
+        R_decrypt = AES.new(R, AES.MODE_CBC, iv_decrypt)
+        challengeAB = unpad(R_decrypt.decrypt(encypted_challenge_AB), AES.block_size)
+        challengeAB = challengeAB.decode('utf-8')
+        print("challenge response", challengeAB)
 
         # check challenge A
-        assert challenge_response[:5] == challengeA, "Challenge A failed."
+        challengeA_decrypted = (challengeAB[:10]).strip()
+        assert challengeA_decrypted == challengeA, "Challenge A failed."
 
         # get challengeB
-        challengeB = challenge_response[5:]
+        challengeB = challengeAB[10:].strip()
+        print(challengeB)
 
         # response with challengeB
         #send R(challengeB)
-        self.send_json(challenge_b=user1.encrypt_string(challengeB, R))
+        iv_encrypt = Random.get_random_bytes(16)
+        R_encrypt = AES.new(R, AES.MODE_CBC, iv_encrypt)
+        challengeB = bytes(challengeB, 'utf-8')
+        encrypted_challenge_B = R_encrypt.encrypt(pad(challengeB, AES.block_size))
+        self.send_json(challenge_b=b64e(encrypted_challenge_B), iv = b64e(iv_encrypt))
 
         # receive success message
         self.recv_json()
