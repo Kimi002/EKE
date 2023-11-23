@@ -46,24 +46,15 @@ class EKE(JsonClient):
         print("g", user1.g)
         pub_key = user1.gen() # public key
 
-        # Encyption object
-        P_encrypt = AES.new(self.password.ljust(16).encode(), AES.MODE_CBC)
-
         # # P(Ea)
-        # r1 = b64e(P.encrypt(l2b(r1)))
-
-        r1 = l2b(pub_key)
-        ct_bytes = P_encrypt.encrypt(pad(r1, AES.block_size))
-        iv_encypt = P_encrypt.iv
-        ct = b64e(ct_bytes)
-        print("iv",P_encrypt.iv)
+        encrypted_pub_key, iv_encrypt = user1.encrypt(self.password.ljust(16).encode(), l2b(pub_key))
 
         # send public key P(Ea)
         self.send_json(
             action="negotiate",
             username=self.username,
-            enc_pub_key=ct,
-            iv=b64e(iv_encypt),
+            enc_pub_key=encrypted_pub_key,
+            iv=b64e(iv_encrypt),
             modulus=user1.p,
             base = user1.g
         )
@@ -71,12 +62,11 @@ class EKE(JsonClient):
         
         self.recv_json()
         # recieve public key
-        encypted_client_key = b64d(self.data["enc_pub_key"])
+        encrypted_client_key = b64d(self.data["enc_pub_key"])
         iv_decrypt = b64d(self.data["iv"])
 
-        P_decrypt = AES.new(self.password.ljust(16).encode(), AES.MODE_CBC, iv_decrypt)
-        server_key = b2l(unpad(P_decrypt.decrypt(encypted_client_key), AES.block_size))
-
+        server_key = user1.decrypt(self.password.ljust(16).encode(), iv_decrypt, encrypted_client_key)
+        server_key = b2l(server_key)
 
         R = user1.decode_public_key(server_key) # secret exchange key
         print("client's public key is", pub_key)
@@ -85,23 +75,19 @@ class EKE(JsonClient):
 
         # send first challenge
         # send R(challengeA)
-        # encyption object with common secret key
         R = l2b(R,16)
-        iv_encrypt = Random.get_random_bytes(16)
-        R_encrypt = AES.new(R, AES.MODE_CBC, iv_encrypt)
         challengeA = "hello"
         challengeA_bytes = bytes(challengeA, 'utf-8')
-        encrypted_challenge_A = R_encrypt.encrypt(pad(challengeA_bytes, AES.block_size))
-        self.send_json(challenge_a=b64e(encrypted_challenge_A), iv = b64e(iv_encrypt))
+        encrypted_challenge_A, iv_encrypt = user1.encrypt(R ,challengeA_bytes)
+        self.send_json(challenge_a=encrypted_challenge_A, iv = b64e(iv_encrypt))
 
         # receive challenge response
         self.recv_json()
         # decrypt R(challengeA+challengeB)
-        encypted_challenge_AB = b64d(self.data["challenge_b"])
+        encrypted_challenge_AB = b64d(self.data["challenge_b"])
         iv_decrypt = b64d(self.data["iv"])
 
-        R_decrypt = AES.new(R, AES.MODE_CBC, iv_decrypt)
-        challengeAB = unpad(R_decrypt.decrypt(encypted_challenge_AB), AES.block_size)
+        challengeAB = user1.decrypt(R, iv_decrypt, encrypted_challenge_AB)
         challengeAB = challengeAB.decode('utf-8')
         print("challenge response", challengeAB)
 
@@ -115,11 +101,9 @@ class EKE(JsonClient):
 
         # response with challengeB
         #send R(challengeB)
-        iv_encrypt = Random.get_random_bytes(16)
-        R_encrypt = AES.new(R, AES.MODE_CBC, iv_encrypt)
         challengeB = bytes(challengeB, 'utf-8')
-        encrypted_challenge_B = R_encrypt.encrypt(pad(challengeB, AES.block_size))
-        self.send_json(challenge_b=b64e(encrypted_challenge_B), iv = b64e(iv_encrypt))
+        encrypted_challenge_B, iv_encrypt = user1.encrypt(R, challengeB)
+        self.send_json(challenge_b=encrypted_challenge_B, iv = b64e(iv_encrypt))
 
         # receive success message
         self.recv_json()
