@@ -62,6 +62,7 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         # P = AES.new(self.database[self.data["username"]].ljust(16).encode(), AES.MODE_ECB)
         print("p,g,pwd,iv", p,g,pwd,iv_decrypt)
 
+        # TODO - do something about this
         a2 = gen_prime(1000,3000) # secret key
         user2 = DiffieHellman(a2,g,p)
         client_key = user2.decrypt(pwd.ljust(16).encode(), iv_decrypt, encrypted_client_key)
@@ -81,7 +82,8 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         print("client's public key is", client_key)
         print("server's public key is", pub_key)
         print("common secret key is",R)
-        R = l2b(R,16)
+        
+        # R = l2b(R,16) # removed this because the key is now generated in bytes. Do not need to convert
 
         # receive encrypted challengeA and generate challengeB
         self.recv_json()

@@ -7,13 +7,13 @@ import socket
 import sys
 from eke import *
 from json_mixins import JsonClient
-from primes import gen_prime, b64e
+from primes import gen_prime, b64e, find_random_primitive_root
 import hashlib
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from base64 import b64decode as b64d
-from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l
+from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l, getPrime
 
 
 class EKE(JsonClient):
@@ -38,9 +38,15 @@ class EKE(JsonClient):
 
     def negotiate(self):
         # generate random public key Ea
-        p = gen_prime(2000,6000)
-        g = gen_prime(500,1000)
+        # modulus is 1024 bit prime number
+        p = getPrime(1024)
+        # base is a 4 bit prime number
+        # TODO - change this so that g is primitive root of p
+        g = getPrime(4)
+        # TODO - do something about this
         a1 = gen_prime(1000,3000) # secret key
+
+
         user1 = DiffieHellman(a1,g,p)
         print("p", user1.p)
         print("g", user1.g)
@@ -75,7 +81,8 @@ class EKE(JsonClient):
 
         # send first challenge
         # send R(challengeA)
-        R = l2b(R,16)
+
+        # R = l2b(R,16) # removed this because the key is now generated in bytes. Do not need to convert
         challengeA = "hello"
         challengeA_bytes = bytes(challengeA, 'utf-8')
         encrypted_challenge_A, iv_encrypt = user1.encrypt(R ,challengeA_bytes)

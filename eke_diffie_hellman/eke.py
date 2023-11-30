@@ -2,6 +2,7 @@ from primes import gen_prime, b64e
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad,unpad
+from Crypto.Protocol.KDF import scrypt
 
 class DiffieHellman:
     
@@ -17,9 +18,13 @@ class DiffieHellman:
     
     
     def decode_public_key(self,r_other):
-
+        # returns secret common exchange key
         self.exchange_key = (r_other ** self.a) % self.p
-        return self.exchange_key
+        # TODO - change the way salt is generated
+        salt=10
+        # key derivation function used to derive 128 bit AES key
+        aes_key = scrypt(str(self.exchange_key).encode(), salt, 16, N=2**14, r=8, p=1)
+        return aes_key
 
     def encrypt(self, secret_key_bytes, encryption_bytes):
         iv_encrypt = Random.get_random_bytes(16)

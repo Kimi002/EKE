@@ -1,5 +1,6 @@
 from random import randint
 from base64 import b64encode
+from sympy import primitive_root
 
 # Generate a prime number
 def gen_prime(start, stop):
@@ -19,3 +20,10 @@ def gen_prime(start, stop):
 
 def b64e(x):
     return b64encode(x).decode('utf-8')
+
+
+def find_random_primitive_root(n):
+    smallest_primitive_root = primitive_root(n)
+    # The function below generates a random primitive root modulo n
+    random_primitive_root = pow(smallest_primitive_root, randint(1, n - 2), n)
+    return random_primitive_root
