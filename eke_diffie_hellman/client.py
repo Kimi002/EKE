@@ -7,7 +7,7 @@ import socket
 import sys
 from eke import *
 from json_mixins import JsonClient
-from primes import gen_prime, b64e, find_random_primitive_root
+from primes import gen_prime, b64e, findPrimitive
 import hashlib
 from Crypto import Random
 from Crypto.Cipher import AES
@@ -42,7 +42,7 @@ class EKE(JsonClient):
         p = getPrime(1024)
         # base is a 4 bit prime number
         # TODO - change this so that g is primitive root of p
-        g = getPrime(4)
+        g = findPrimitive(p)
         # TODO - do something about this
         a1 = gen_prime(1000,3000) # secret key
 
