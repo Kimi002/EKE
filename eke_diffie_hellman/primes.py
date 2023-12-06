@@ -117,9 +117,15 @@ def findPrimitive( n) :
 	phi = n - 1
 
 	# Find prime factors of phi and store in a set 
+	######################################
+	# This is the power we raise a mod n to
+	# This is used to find the multiplicative inverse
+	# multiplicative inverse (mod n) divides phi (n)
+	# hence, only try values of multiplicative inverse which divide phi
 	findPrimefactors(s, phi) 
 
 	# Check for every number from 2 to phi 
+	# SHOULD CHANGE THIS TO ONLY CHECK FOR NUMBERS COPRIME TO n
 	for r in range(2, phi + 1): 
 
 		# Iterate through all prime factors of phi. 
@@ -165,5 +171,5 @@ def get_parameters():
 	
 	return(p,x)
 
-print(get_parameters())
+# print(get_parameters())
 
