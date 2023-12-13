@@ -2,34 +2,6 @@ from Crypto.Util.number import getPrime
 import random
 import math
 
-def findPrimefactors(n) :
-	s = {}
-	# Print the number of 2s that divide n 
-	while (n % 2 == 0) :
-		if 2 not in s:
-			s[2] = 1
-		else:
-			s[2] += 1
-		n = n // 2
-
-	# n must be odd at this point. So we can 
-	# skip one element (Note i = i +2) 
-	for i in range(3, int(math.sqrt(n)), 2):
-		# While i divides n, print i and divide n 
-		while (n % i == 0) :
-			if i not in s:
-				s[i] = 1
-			else:
-				s[i] += 1
-			n = n // i 
-		
-	# This condition is to handle the case 
-	# when n is a prime number greater than 2 
-	if (n > 2) :
-		s[n] = 1
-	
-	return s
-
 def power( x, y, p): 
 
 	res = 1 # Initialize result 
@@ -167,33 +139,36 @@ def check_2_not_square_mod_p(p):
 
 # print("modulus =",p)
 
+#---------------------------------------------------------
 # Euler's totient p is 2*q
 # Any number co prime to q (any number between 1 and q) is the generator for group 1 to q
 # Take a random, or find the smallest x such that g^2 != 1 and  g^q = 1. Then we have a generator
+# Below was my implementation to get DH parameters
+# Almost correct
 
-while True:
-	q = getPrime(1024)
-	print(miller_rabin_test(q))
-	p = get_safe_prime(q)
-	# print("got p")
-	if p == -1:
-		continue
-	print("modulus =",p)
+# while True:
+# 	q = getPrime(1024)
+# 	print(miller_rabin_test(q))
+# 	p = get_safe_prime(q)
+# 	# print("got p")
+# 	if p == -1:
+# 		continue
+# 	print("modulus =",p)
 
-	while True:
-		g = random.randint(2,p-1)
-		# BigInteger exp = (p.subtract(BigInteger.ONE)).divide(q); = (p-1)/q = 2
-		exp = 2
-		if power(g,2,p) != 1:
-			break
-	print(power(g,q,p))
-	break
+# 	while True:
+# 		g = random.randint(2,p-1)
+# 		# BigInteger exp = (p.subtract(BigInteger.ONE)).divide(q); = (p-1)/q = 2
+# 		exp = 2
+# 		if power(g,2,p) != 1:
+# 			break
+# 	print(power(g,q,p))
+# 	break
 
 
-print()
-print(p)
-print()
-print(g)
+# print()
+# print(p)
+# print()
+# print(g)
 
 # The above code is fast
 # Problem : Generation of safe prime takes an arbotrary amout of time. Sometimes fast, sometimes very slow
@@ -223,3 +198,45 @@ print(g)
 # mod = 191421130673665762690541583655871577839300471310668993396462315773308312671134702120157628101387956544263037062269415353389312046680873836647897963014688080009841782867247269797655393526793818541094532881503788876789573288682802391453009966288869705890116832960608953381860846096089339196231992644259590440547
 
 # gen = 3457728980314861035470114748969299452132294704810123276839613475212259641261827366782266592876308377687779202083945513110777598728643023041072596863246072040874505958596845888067202653656787959095484188686983691564811427834782636359944260844284805087326638882616845912337139522497329623028538939605190277059
+
+
+#----------------------------------------------
+###
+# Corrected version
+# generator is a quadratic non residue
+# Quadratic non residue has legendre value = -1
+# Legendre value = a**((p-1)/2) = a**q
+
+while True:
+    q = getPrime(1024)
+    # print(miller_rabin_test(q))
+    p = get_safe_prime(q)
+    # print(miller_rabin_test(p))
+	# print("got p")
+    if p == -1:
+        continue
+    print("modulus =",p)
+    print(miller_rabin_test(q))
+    while True:
+        print("hi", end = ",")
+        g = random.randint(10,p-1)
+		# legendre = g ** ((p-1)/2) (mod p)
+        exp = (p-1)//2
+        # print(exp==q, end=",")
+        if power(g,exp,p) == p-1:
+             break
+    print()
+    print(power(g,q,p))
+    print()
+    print("g=", g)
+    break
+
+with open("./DH_params.txt", "a") as f:
+      f.write("p = ")
+      f.write(str(p))
+      f.write('\n')
+      f.write("g = ")
+      f.write(str(g))
+      f.write('\n')
+      f.write("------------------------")
+      f.write('\n')

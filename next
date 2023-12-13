@@ -1,0 +1,64 @@
+have code with diffie hellman
+Need to encode using password next to convert to eke
+Also learn about json and socketserver
+
+Meeting
+    2**256 - print and see output in python (built in)
+    AES - encyption
+    arbitrary precision arithmetic - exponentiation, modulus for large numbers- book
+        - add, subtract and other arithmestic register operations for when numbers are larger than register size
+    find different language - which does not have implementation for this stuff
+    Cobolt - dead language
+----------------------------------------------------------------------------------
+week9
+Next - 
+look at spake in overview paper
+
+checking for large numbers
+    - replaced p with 1024 bit random number
+    - TODO - replace g with primitive root of p
+    - replaced key with scrypt(key) - [common secret key]
+    - TODO - figure out what to do with the salt
+    - TODO - figure out secret key
+
+TODO - print statement manage
+
+--------------------------------------------------------------------------
+week 11
+Stuck 
+Cannot find primitive root of modulus
+- look at function to generate prime factors for large numbers
+    + Can not find this. Can not get generator without this.
+- look at sPAKE from overview paper
+- look at the number theory book for other hints
+    + Need to find a primitive root. Do not think there is another option
+
+meeting -
+look at existing implementations of diffie hellman to see how they genreate this stuff
+and the 2 links sent in email
+
+--------------------------------------------------------------------------------------
+link 1
+https://crypto.stackexchange.com/questions/87137/how-to-get-the-order-of-a-group-generator-in-dh
+
+If p is a safe prime, and (p mod 8 = +- 1), then 2 is a generator
+    problem:
+        - Need to check if number is prime to get a safe prime
+        - This takes too long
+        - Can look at Miller-Rabin primality test
+If p is a safe prime, (p=2q+1), then take any random x such that (g^2 != 1) and (g^q == 1)
+    problem:
+        - I do not understand why such a number can be a generator. Hence, I am not sure if this is correct.
+
+link2
+https://crypto.stackexchange.com/questions/87137/how-to-get-the-order-of-a-group-generator-in-dh
+
+code for second inference from first link
+
+-----------------------------------------------------------------------------------------
+
+I tried implementing link 2. which is the same as second point from link 1
+ - miller rabin test -> Used bignum book - can test if prime quickly now
+ - might need to look at quick exponentiation
+ - code runs fast
+ - Need to find a way to get safe prime
