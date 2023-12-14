@@ -3,6 +3,7 @@ from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad,unpad
 from Crypto.Protocol.KDF import scrypt
+from dhmath import power
 
 class DiffieHellman:
     
@@ -10,7 +11,8 @@ class DiffieHellman:
         self.a = a
         self.g = g
         self.p = p
-        self.key = (g ** a) % p
+        self.key = power(g,a,p)
+        # self.key = (g ** a) % p
 
     def gen(self):
         # generate public key
@@ -19,7 +21,8 @@ class DiffieHellman:
     
     def decode_public_key(self,r_other):
         # returns secret common exchange key
-        self.exchange_key = (r_other ** self.a) % self.p
+        self.exchange_key = power(r_other, self.a, self.p)
+        # self.exchange_key = (r_other ** self.a) % self.p
         # TODO - change the way salt is generated
         salt=10
         # key derivation function used to derive 128 bit AES key

@@ -7,7 +7,8 @@ import socket
 import sys
 from eke import *
 from json_mixins import JsonClient
-from primes import gen_prime, b64e, findPrimitive
+from primes import gen_prime, b64e
+from dhmath import get_DH_params
 import hashlib
 from Crypto import Random
 from Crypto.Cipher import AES
@@ -39,12 +40,16 @@ class EKE(JsonClient):
     def negotiate(self):
         # generate random public key Ea
         # modulus is 1024 bit prime number
-        p = getPrime(1024)
+        # p = getPrime(1024)
         # base is a 4 bit prime number
-        # TODO - change this so that g is primitive root of p
-        g = findPrimitive(p)
+        # change this so that g is primitive root of p
+        # g = findPrimitive(p)
+        # Get proper DH params
+        params = get_DH_params()
+        p = params["modulus"]
+        g = params["generator"]
         # TODO - do something about this
-        a1 = gen_prime(1000,3000) # secret key
+        a1 = getPrime(256) # secret key
 
 
         user1 = DiffieHellman(a1,g,p)

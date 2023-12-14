@@ -7,7 +7,7 @@ from json_mixins import JsonServerMixin
 from primes import gen_prime, b64e
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad,unpad
-from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l
+from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l, getPrime
 from base64 import b64decode as b64d
 from Crypto import Random
 
@@ -63,7 +63,7 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         print("p,g,pwd,iv", p,g,pwd,iv_decrypt)
 
         # TODO - do something about this
-        a2 = gen_prime(1000,3000) # secret key
+        a2 = getPrime(256) # secret key
         user2 = DiffieHellman(a2,g,p)
         client_key = user2.decrypt(pwd.ljust(16).encode(), iv_decrypt, encrypted_client_key)
         client_key = b2l(client_key)
