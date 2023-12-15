@@ -62,3 +62,33 @@ I tried implementing link 2. which is the same as second point from link 1
  - might need to look at quick exponentiation
  - code runs fast
  - Need to find a way to get safe prime
+ ------------------------------------------
+  
+  week 12
+
+- Corrected dh parameter generation
+- leftover tasks
+    - TODO - figure out what to do with the salt
+    - TODO - figure out secret key
+    - TODO - print statement manage
+
+Ask in meeting -Meeting 
+    - Is it okay to have secret exponent = prime(256 bits)
+Look at key generation and salt
+
+Meeting - 
+Look up for DH key sizes these websites - so I can referecnce it
+NIST
+ISO
+
+Look up PAKE with explicit authentication.
+    - Say I have improved with scrypt.
+    - Explain why I need it. I need to send challenges. Need to use scrypt to be able to use key for AES encyption
+    - It is okay to have the same salt
+
+
+Tasks for Christmas
+    - Start the report 
+    - salt - check if it is okay to have a fixed salt value in the class
+    - secret exponent size check online
+    - manage print statements

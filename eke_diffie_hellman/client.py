@@ -7,12 +7,8 @@ import socket
 import sys
 from eke import *
 from json_mixins import JsonClient
-from primes import gen_prime, b64e
-from dhmath import get_DH_params
-import hashlib
-from Crypto import Random
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
+from dhmath import b64e
+import random
 from base64 import b64decode as b64d
 from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l, getPrime
 
@@ -38,18 +34,12 @@ class EKE(JsonClient):
 
 
     def negotiate(self):
-        # generate random public key Ea
-        # modulus is 1024 bit prime number
-        # p = getPrime(1024)
-        # base is a 4 bit prime number
-        # change this so that g is primitive root of p
-        # g = findPrimitive(p)
-        # Get proper DH params
-        params = get_DH_params()
+
+        # get diffie hellman parameters
+        params = DiffieHellman.get_DH_params()
         p = params["modulus"]
         g = params["generator"]
-        # TODO - do something about this
-        a1 = getPrime(256) # secret key
+        a1 = getPrime(2048) # secret key
 
 
         user1 = DiffieHellman(a1,g,p)
@@ -76,13 +66,19 @@ class EKE(JsonClient):
         encrypted_client_key = b64d(self.data["enc_pub_key"])
         iv_decrypt = b64d(self.data["iv"])
 
+        print()
+        print("salt")
+        print(DiffieHellman.salt)
+        print()
+
         server_key = user1.decrypt(self.password.ljust(16).encode(), iv_decrypt, encrypted_client_key)
         server_key = b2l(server_key)
 
-        R = user1.decode_public_key(server_key) # secret exchange key
+        dh_secret_key = user1.get_dh_exchange_key(server_key) # secret exchange key
+        R = user1.get_AES_key()
         print("client's public key is", pub_key)
         print("server's public key is", server_key)
-        print("common secret key",R)
+        print("common secret key", dh_secret_key)
 
         # send first challenge
         # send R(challengeA)

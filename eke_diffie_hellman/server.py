@@ -4,7 +4,7 @@ import socketserver
 import os
 from eke import *
 from json_mixins import JsonServerMixin
-from primes import gen_prime, b64e
+from dhmath import b64e
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad,unpad
 from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l, getPrime
@@ -39,6 +39,7 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
                 print(f"Caught exception: success={success}")
 
     def handle_eke_register(self):
+
         user = self.data["username"]
         passwd = self.data["password"]
 
@@ -52,6 +53,10 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
 
     def handle_eke_negotiate_key(self):
 
+        # set the salt which is later used for key derivation
+        # salt = os.urandom(16)
+        # DiffieHellman.salt = salt
+
         # get client's public key, p and g
         encrypted_client_key = b64d(self.data["enc_pub_key"])
         iv_decrypt = b64d(self.data["iv"])
@@ -62,8 +67,7 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         # P = AES.new(self.database[self.data["username"]].ljust(16).encode(), AES.MODE_ECB)
         print("p,g,pwd,iv", p,g,pwd,iv_decrypt)
 
-        # TODO - do something about this
-        a2 = getPrime(256) # secret key
+        a2 = getPrime(2048) # secret key
         user2 = DiffieHellman(a2,g,p)
         client_key = user2.decrypt(pwd.ljust(16).encode(), iv_decrypt, encrypted_client_key)
         client_key = b2l(client_key)
@@ -72,7 +76,11 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         print("g", user2.g)
         pub_key= user2.gen() # public key
 
-        R = user2.decode_public_key(client_key) # secret exchange key
+        dh_secret_key = user2.get_dh_exchange_key(client_key)
+        print()
+        print(DiffieHellman.salt)
+        print()
+        R = user2.get_AES_key() # secret exchange key
         print("generated secret key")
 
         encrypted_pub_key, iv_encrypt = user2.encrypt(pwd.ljust(16).encode(), l2b(pub_key))
@@ -81,7 +89,7 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         self.send_json(enc_pub_key=encrypted_pub_key, iv=b64e(iv_encrypt))
         print("client's public key is", client_key)
         print("server's public key is", pub_key)
-        print("common secret key is",R)
+        print("common secret key is", dh_secret_key)
         
         # R = l2b(R,16) # removed this because the key is now generated in bytes. Do not need to convert
 
