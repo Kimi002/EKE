@@ -23,6 +23,19 @@ def power( x, y, p):
 
 	return res
 
+def montgomery_modular_exponentiation(base, exponent, modulus):
+    result = 1
+    base = (base % modulus + modulus) % modulus
+    exponent = exponent % (modulus - 1)
+
+    while exponent > 0:
+        if exponent % 2 == 1:
+            result = (result * base) % modulus
+        exponent = exponent >> 1
+        base = (base * base) % modulus
+
+    return result
+
 def miller_rabin_test(n, k=5):
     """
     Miller-Rabin primality test.
@@ -50,12 +63,12 @@ def miller_rabin_test(n, k=5):
     # Witness loop
     for _ in range(k):
         a = random.randint(2, n - 2)
-        x = power(a, d, n)
+        x = montgomery_modular_exponentiation(a, d, n)
         if x == 1 or x == n - 1:
 			# This is the case when we can not determine if the number is prime or not
             continue
         for _ in range(r - 1):
-            x = power(x, 2, n)
+            x = montgomery_modular_exponentiation(x, 2, n)
 			# if x == 1:
 			# 	return False
             if x == n - 1:
@@ -73,7 +86,6 @@ def get_safe_prime(q):
 	else:
 		print("not prime")
 		return -1
-
 
 
 

@@ -92,3 +92,9 @@ Tasks for Christmas
     - salt - check if it is okay to have a fixed salt value in the class
     - secret exponent size check online
     - manage print statements
+
+-------------------------------------------------------------
+Christmas
+    - Think salt is okay. Does not matter that much
+    - size = 2048
+    - leaving print statements
