@@ -98,3 +98,49 @@ Christmas
     - Think salt is okay. Does not matter that much
     - size = 2048
     - leaving print statements
+
+---------------------------------------------------------------
+Meeting (2/2/24)- 
+TLS needs public infrastructure - like third party certificate. Need to trust third party. Heavier infrastructure. More assumptions
+EKE - only need to agreee on password. No other infrastructure
+
+
+BIBtex citations
+DBLP.org - references
+    search for paper. Get BiBTex
+
+Cite webpage - MISC - find proper way
+@Book - same as webpage
+
+move diffie hellman to background
+do not start sentence with citations
+change fraction bracket \left, \right
+
+only 3.2 in chapter 3 - name it protocol description instead of design
++ describe security properties - assumptions etc
+
+Proof - 
+Assume attacker A exists who can break this protocol. If attacker exists, then we can solve a problem B. However, we can not solve B and hence, attacker A can not exist. 
+
+explain to someone who does not know - expand on definitions etc
+
+
+Evaluation
+time , efficiency, make graph of runtime
+vary parameter sizes and measure
+
+run many times, store in table, plot - return average time for 1 parameter size
+PGF plots latex - feed table to make graph
+
+Stop working on code. Improve report. Research on everything and explain to someone who does not know anything. Length does not matter. Should be understandable.
+
+------------------------------------------------------------------
+TODO
+    - TLS
+    - References
+    - Move DH to background
+    - fix math notation
+    - rename sections
+    - explain security - proof, properties etc
+    - evaluation - script and graph
+    - expand on everything - include definitions etc.
