@@ -100,7 +100,7 @@ Christmas
     - leaving print statements
 
 ---------------------------------------------------------------
-Meeting (2/2/24)- 
+Meeting (2/2/24)- WEEK1
 TLS needs public infrastructure - like third party certificate. Need to trust third party. Heavier infrastructure. More assumptions
 EKE - only need to agreee on password. No other infrastructure
 
@@ -136,11 +136,31 @@ Stop working on code. Improve report. Research on everything and explain to some
 
 ------------------------------------------------------------------
 TODO
-    - TLS
+    - TLS - DONE
     - References
-    - Move DH to background
-    - fix math notation
+    - Move DH to background - DONE
+    - explain parameter math in detail - DONE
+    - fix math notation - DONE
     - rename sections
     - explain security - proof, properties etc
     - evaluation - script and graph
     - expand on everything - include definitions etc.
+    - exponent function
+    - can expand on cryptographic primitives
+    - can say why I chose Diffie-Hellman over RSA
+
+Immediate TODO
+    
+
+Order of TODO
+    - explain implementation - DONE
+    - evaluation
+    - Security
+    - exponent
+    - handle when different key/ challenge fails
+
+------------------------------------------------
+Meeting - 16/02/24
+preliminaries - name for mathematical concepts - DONE
+diffie hellman then EKE - change order - DONE
+name implementation something else
