@@ -22,6 +22,8 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
             action = self.data["action"]
             if action == "register":
                 self.handle_eke_register()
+            elif self.data['username'] not in self.database:
+                print("Not registered")
             elif action == "negotiate":
                 self.handle_eke_negotiate_key()
                 self.receive_message()
@@ -136,8 +138,12 @@ def main():
     EKEHandler.debug_send = DEBUG & 2 == 2
 
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer((HOST, PORT), EKEHandler) as server:
-        server.serve_forever()
+    try:
+        with socketserver.TCPServer((HOST, PORT), EKEHandler) as server:
+            server.serve_forever()
+    except:
+        print("Ending server program")
+        quit()
 
 
 if __name__ == "__main__":

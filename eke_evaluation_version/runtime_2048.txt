@@ -1,0 +1,4 @@
+It took 2.740 seconds.
+It took 16.328 seconds.
+It took 3.617 seconds.
+8.623 seconds.

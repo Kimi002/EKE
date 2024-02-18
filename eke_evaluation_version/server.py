@@ -14,6 +14,8 @@ from Crypto import Random
 
 class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
     database = {}
+    # creating test user
+    database["dummy_user"] = "dummy_pwd"
 
     def handle(self):
         self.recv_json()
@@ -22,9 +24,11 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
             action = self.data["action"]
             if action == "register":
                 self.handle_eke_register()
+            elif self.data['username'] not in self.database:
+                print("Not registered")
             elif action == "negotiate":
                 self.handle_eke_negotiate_key()
-                self.receive_message()
+                # self.receive_message()
             else:
                 self.send_json(error=f"Unrecognised action: {action}")
         except KeyError:
@@ -64,61 +68,30 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         g = (self.data["base"])
         pwd = self.database[self.data["username"]]
 
-        # P = AES.new(self.database[self.data["username"]].ljust(16).encode(), AES.MODE_ECB)
-        print("p,g,pwd,iv", p,g,pwd,iv_decrypt)
-
         a2 = getPrime(2048) # secret key
         user2 = DiffieHellman(a2,g,p)
         client_key = user2.decrypt(pwd.ljust(16).encode(), iv_decrypt, encrypted_client_key)
         client_key = b2l(client_key)
 
-        print("p", user2.p)
-        print("g", user2.g)
+        # print("p", user2.p)
+        # print("g", user2.g)
         pub_key= user2.gen() # public key
 
         dh_secret_key = user2.get_dh_exchange_key(client_key)
-        print()
-        print(DiffieHellman.salt)
-        print()
-        R = user2.get_AES_key() # secret exchange key
-        print("generated secret key")
+        # print()
+        # print(DiffieHellman.salt)
+        # print()
 
         encrypted_pub_key, iv_encrypt = user2.encrypt(pwd.ljust(16).encode(), l2b(pub_key))
 
         # send public key to client
         self.send_json(enc_pub_key=encrypted_pub_key, iv=b64e(iv_encrypt))
-        print("client's public key is", client_key)
-        print("server's public key is", pub_key)
-        print("common secret key is", dh_secret_key)
-        
-        # R = l2b(R,16) # removed this because the key is now generated in bytes. Do not need to convert
+        # print("client's public key is", client_key)
+        # print("server's public key is", pub_key)
+        print("common secret key is")
+        print(dh_secret_key)
 
-        # receive encrypted challengeA and generate challengeB
-        self.recv_json()
-        encypted_challenge_A = b64d(self.data["challenge_a"])
-        iv_decrypt = b64d(self.data["iv"])
-        challengeA = user2.decrypt(R, iv_decrypt, encypted_challenge_A)
-        challengeA = challengeA.decode('utf-8')
-        print(challengeA)
-
-        # send challenge A + challenge B
-        challengeB = "byebye"
-        challengeAB = challengeA.ljust(10) + challengeB.ljust(10)
-        challengeAB = bytes(challengeAB, 'utf-8')
-        encrypted_challenge_B, iv_encrypt = user2.encrypt(R, challengeAB)
-        self.send_json(challenge_b=encrypted_challenge_B, iv = b64e(iv_encrypt))
-
-        # receive challengeB back again
-        self.recv_json()
-        encrypted_challenge_B = b64d(self.data["challenge_b"])
-        iv_decrypt = b64d(self.data["iv"])
-
-        challengeB_decrypted = user2.decrypt(R, iv_decrypt, encrypted_challenge_B)
-        challengeB_decrypted = challengeB_decrypted.decode('utf-8')
-        success = challengeB_decrypted == challengeB
-
-        self.send_json(success=success)
-        self.R = R
+        self.R = dh_secret_key
 
     def receive_message(self):
         self.recv_json()
@@ -136,8 +109,12 @@ def main():
     EKEHandler.debug_send = DEBUG & 2 == 2
 
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer((HOST, PORT), EKEHandler) as server:
-        server.serve_forever()
+    try:
+        with socketserver.TCPServer((HOST, PORT), EKEHandler) as server:
+            server.serve_forever()
+    except:
+        print("Ending server program")
+        quit()
 
 
 if __name__ == "__main__":

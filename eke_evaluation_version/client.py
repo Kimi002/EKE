@@ -43,8 +43,8 @@ class EKE(JsonClient):
 
 
         user1 = DiffieHellman(a1,g,p)
-        print("p", user1.p)
-        print("g", user1.g)
+        # print("p", user1.p)
+        # print("g", user1.g)
         pub_key = user1.gen() # public key
 
         # # P(Ea)
@@ -66,59 +66,22 @@ class EKE(JsonClient):
         encrypted_client_key = b64d(self.data["enc_pub_key"])
         iv_decrypt = b64d(self.data["iv"])
 
-        print()
-        print("salt")
-        print(DiffieHellman.salt)
-        print()
+        # print()
+        # print("salt")
+        # print(DiffieHellman.salt)
+        # print()
 
         server_key = user1.decrypt(self.password.ljust(16).encode(), iv_decrypt, encrypted_client_key)
         server_key = b2l(server_key)
 
         dh_secret_key = user1.get_dh_exchange_key(server_key) # secret exchange key
-        R = user1.get_AES_key()
-        print("client's public key is", pub_key)
-        print("server's public key is", server_key)
-        print("common secret key", dh_secret_key)
-
-        # send first challenge
-        # send R(challengeA)
-
-        # R = l2b(R,16) # removed this because the key is now generated in bytes. Do not need to convert
-        challengeA = "hello"
-        challengeA_bytes = bytes(challengeA, 'utf-8')
-        encrypted_challenge_A, iv_encrypt = user1.encrypt(R ,challengeA_bytes)
-        self.send_json(challenge_a=encrypted_challenge_A, iv = b64e(iv_encrypt))
-
-        # receive challenge response
-        self.recv_json()
-        # decrypt R(challengeA+challengeB)
-        encrypted_challenge_AB = b64d(self.data["challenge_b"])
-        iv_decrypt = b64d(self.data["iv"])
-
-        challengeAB = user1.decrypt(R, iv_decrypt, encrypted_challenge_AB)
-        challengeAB = challengeAB.decode('utf-8')
-        print("challenge response", challengeAB)
-
-        # check challenge A
-        challengeA_decrypted = (challengeAB[:10]).strip()
-        assert challengeA_decrypted == challengeA, "Challenge A failed."
-
-        # get challengeB
-        challengeB = challengeAB[10:].strip()
-        print(challengeB)
-
-        # response with challengeB
-        #send R(challengeB)
-        challengeB = bytes(challengeB, 'utf-8')
-        encrypted_challenge_B, iv_encrypt = user1.encrypt(R, challengeB)
-        self.send_json(challenge_b=encrypted_challenge_B, iv = b64e(iv_encrypt))
-
-        # receive success message
-        self.recv_json()
-        assert self.data["success"], self.data.get("message", "ChallengeB failed.")
+        # print("client's public key is", pub_key)
+        # print("server's public key is", server_key)
+        print("common secret key")
+        print(dh_secret_key)
 
         # store the shared key
-        self.R = R
+        self.R = dh_secret_key
 
     def send_message(self, message: str):
         encoded_message = message # no encryption for now
@@ -166,14 +129,12 @@ def main():
             debug_send=debug_send,
             debug_recv=debug_recv
         )
-
+        print(args)
         try:
             if action == "register":
                 eke.register()
             else:
                 eke.negotiate()
-                msg = input("message: ")
-                eke.send_message(msg)
         except KeyError:
             if "success" not in eke.data:
                 raise
@@ -184,6 +145,9 @@ def main():
                 print(f"Caught exception: {success = } - {message}")
             else:
                 print(f"Caught exception: success={success}")
+        # except Exception as e:
+        #     print(e)
+        #     print("Failed")
 
 
 if __name__ == "__main__":
