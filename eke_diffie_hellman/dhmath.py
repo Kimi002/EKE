@@ -88,21 +88,59 @@ def get_safe_prime(q):
 		return -1
 
 
+# Extended Euclidean Algorithm
+# can find x and y such that ax+by = gcd(a,b)
+# Used by montgomery modular exponentiation
+def egcd(a, b):
+	# x and y are s_old and t_old
+	# u and v are si and ti
+    x,y, u,v = 0,1, 1,0
+    while a != 0:
+        q, r = b//a, b%a
+        m, n = x-u*q, y-v*q
+        b,a, x,y, u,v = a,r, u,v, m,n
+    gcd = b
+    return gcd, x, y
 
+# montgomery product
+def mon_product(A,B,n,N,r):
+    t = (A * B) % r
+    m = (t * N) % r
+    U = ((A * B) + (m * n)) // r
+    if U>=n:
+        return U-n
+    else:
+        return U
 
+# modular multiplication
+# we want a.b (mod n)
+# a,b,n are k-bits long
+# def mon_mod_mult(a,b,n,n_prime,r):
+#     A = (a * r) % n
+#     u = mon_product(A,b, n, n_prime, r)
+#     print("u", u)
+#     return u
 
-#---------------------------------------------------------
-# Euler's totient p is 2*q
-# Any number co prime to q (any number between 1 and q) is the generator for group 1 to q
-# Take a random, or find the smallest x such that g^2 != 1 and  g^q = 1. Then we have a generator
-# Below was my implementation to get DH parameters
-# Almost correct
+def mon_mod_exp(base, exp, n,k):
+    # k is the number of bits
+    r = 2**k
+    gcd, x,y = egcd(r,n)
+    n_prime = -y
+    r_prime = x
+    print(n, n_prime, r, r_prime)
+    M = (base*r) % n
+    X = r % n
+    print(M,X)
+    # for i in range(k-1,0,-1):
+    while exp>0:
+        print(x)
+        x = mon_product(X,X, n, n_prime,r)
+        if exp%2 == 1:
+            print(X)
+            X = mon_product(M,X, n, n_prime,r)
+        exp = exp//2
+    print(x)
+    x = mon_product(X,1, n, n_prime,r)
+    return x
 
-#----------------------------------------------
-###
-# Corrected version
-# generator is a quadratic non residue
-# Quadratic non residue has legendre value = -1
-# Legendre value = a**((p-1)/2) = a**q
-
-# moved func to eke
+print(mon_mod_exp(3,4,7,2))

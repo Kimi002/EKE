@@ -150,13 +150,13 @@ TODO
     - can say why I chose Diffie-Hellman over RSA
 
 Immediate TODO
-    
+    - add encryption to send/receive message functions
 
 Order of TODO
     - explain implementation - DONE
     - evaluation
     - Security
-    - exponent
+    - exponent - affecting runtime
     - handle when different key/ challenge fails
 
 ------------------------------------------------
