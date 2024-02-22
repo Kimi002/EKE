@@ -141,14 +141,18 @@ def extended_gcd(a, b):
         return (gcd, y - (b // a) * x, x)
 
 # montgomery product
-def mon_product(A,B,n,N,r):
-    t = (A * B) % r
-    m = (t * N) % r
-    # U = ((A * B) + (m * n)) // r 
-    U = (t + m * n) // r
+def mon_product(a_bar,b_bar,n,n_inv,r):
+    t = (a_bar * b_bar)
+    # print("t:",t, end="  ;   ")
+    m = (t * n_inv) % r
+    # print("m:",m, end="  ;   ")
+    U = (t + (m * n)) // r
+    # print("U:",U, end="  ;   ")
     if U>=n:
+        # print("U-n:",U-n, end="  ;   ")
         return U-n
     else:
+        # print("U:",U, end="  ;   ")
         return U
 
 # modular multiplication
@@ -180,18 +184,19 @@ def mon_mod_exp(base, exp, n, r):
 
 
 # Example usage:
-a = 9112655597
-e = 2336853847
-n = 3179736385
+a = 9112655597874655748395
+e = 23368538474983658027504
+n = 317973638576439257895405
 # r = 2 ** (len(bin(n)) - 2) # r = 2^(number of bits in n)
 r = 1
 while r < n:
     r <<= 1
 
-# print(montgomery_modular_exponentiation(a,e,n))
-# print(power(a,e,n))
-# print(mon_mod_exp(a,e,n,r))
+print(montgomery_modular_exponentiation(a,e,n))
+print(power(a,e,n))
+print(mon_mod_exp(a,e,n,r))
 
+###############################################
 # the following test proved that egcd functions are correct
 # for i in range(10):
 #     a = random.randint(0,30)
@@ -202,24 +207,23 @@ while r < n:
 #     print(extended_gcd(a,b))
 #     print("-----------------------------------------")
 
-monPro_test = {(3,3):3, (8,8):4, (4,4):1, (7,7):12, (8,3):8, (8,1):7}
-n=13
-r = 1
-while r < n:
-    r <<= 1
-# print(r,n)
-# gcd, x,y = extended_gcd(r,n)
-# print(gcd,x,y)
-# n_inv = (-y)%r
-# r_inv = x%r
-n_inv = find_n_inv(n,r)
+
+
+###############################################
+# the following test proves that MonPro has been fixed
+# monPro_test = {(3,3):3, (8,8):4, (4,4):1, (7,7):12, (8,3):8, (8,1):7}
+# n=13
+# r = 1
+# while r < n:
+#     r <<= 1
+# # print(r,n)
 # n_inv = find_n_inv(n,r)
-# n_inv, y = mod_inverse(n,r)
-print("n_inv is", n_inv)
-print("It should be r_inv=9 and n_inv=11")
-for key in monPro_test:   
-    ans = mon_product(key[0],key[1], n, n_inv, r)
-    # print(key, ":", ans)
-    # print(key, ":", monPro_test[key])
-    print(ans == monPro_test[key])
-    # print("-----------------------------------------")
+# # print("n_inv is", n_inv)
+# # print("It should be r_inv=9 and n_inv=11")
+# for key in monPro_test:   
+#     print(key)
+#     ans = mon_product(key[0],key[1], n, n_inv, r)
+#     print(key, ":", ans)
+#     print(key, ":", monPro_test[key])
+#     print(ans == monPro_test[key])
+#     print("-----------------------------------------")
