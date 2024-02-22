@@ -103,20 +103,31 @@ def egcd(a, b):
     return gcd, x, y
 
 # This also works
-# def gcdExtended(a, b):
+def gcdExtended(a, b):
  
-#     # Base Case
-#     if a == 0:
-#         return b, 0, 1
+    # Base Case
+    if a == 0:
+        return b, 0, 1
  
-#     gcd, x1, y1 = gcdExtended(b % a, a)
+    gcd, x1, y1 = gcdExtended(b % a, a)
  
-#     # Update x and y using results of recursive
-#     # call
-#     x = y1 - (b//a) * x1
-#     y = x1
+    # Update x and y using results of recursive
+    # call
+    x = y1 - (b//a) * x1
+    y = x1
  
-#     return gcd, x, y
+    return gcd, x, y
+
+def extended_gcd(a, b):
+    """
+    Extended Euclidean Algorithm to find modular inverse.
+    Returns (gcd, x, y) such that a*x + b*y = gcd.
+    """
+    if a == 0:
+        return (b, 0, 1)
+    else:
+        gcd, x, y = extended_gcd(b % a, a)
+        return (gcd, y - (b // a) * x, x)
 
 # montgomery product
 def mon_product(A,B,n,N,r):
@@ -142,8 +153,8 @@ def mon_mod_exp(base, exp, n, r):
     gcd, x,y = egcd(r,n)
     if gcd != 1:
         return False
-    # n_inv = -y
-    n_inv = y
+    n_inv = -y
+    # n_inv = y
     M = (base*r) % n
     X = r % n
     length = len(bin(exp))-3
@@ -154,77 +165,46 @@ def mon_mod_exp(base, exp, n, r):
     x = mon_product(X,1, n, n_inv,r)
     return x
 
-# print(mon_mod_exp(3,4,7,2))
-###############################################
-#chatgpt version
 
-def extended_gcd(a, b):
-    """
-    Extended Euclidean Algorithm
-    Returns (gcd, x, y) where gcd is the greatest common divisor of a and b,
-    and x, y are coefficients such that gcd = ax + by.
-    """
-    if a == 0:
-        return (b, 0, 1)
-    else:
-        gcd, x, y = extended_gcd(b % a, a)
-        return (gcd, y - (b // a) * x, x)
 
-def montgomery_reduction(t, n, n_inv, r):
-    """
-    Montgomery reduction
-    Returns t * r^(-1) mod n.
-    """
-    m = (t * n_inv) % r
-    u = (t + m * n) // r
-    return u if u < n else u - n
-
-def MonPro(a, b, n, n_inv, r):
-    """
-    Montgomery multiplication
-    Returns a * b * r^(-1) mod n.
-    """
-    t = (a * b) % r
-    return montgomery_reduction(t, n, n_inv, r)
-
-def ModExp(a, e, n):
-    """
-    Modular exponentiation using Montgomery multiplication
-    Returns a^e mod n.
-    """
-    # Step 1: Compute n using the extended Euclidean algorithm
-    _, _, n_inv = extended_gcd(n, 1)
-    
-    # Step 2: Compute a * r mod n
-    a = (a * r) % n
-
-    # Step 3: Initialize x = 1 * r mod n
-    x = r % n
-
-    # Step 4: Loop over each bit of the exponent e
-    for i in range(len(bin(e)) - 2, -1, -1):
-        # Step 5: Square x
-        x = MonPro(x, x, n, n_inv, r)
-        
-        # Step 6: If the ith bit of e is 1, multiply x by a
-        if (e >> i) & 1:
-            x = MonPro(a, x, n, n_inv, r)
-
-    # Step 7: Final Montgomery multiplication
-    x = MonPro(1, x, n, n_inv, r)
-
-    return x
 
 # Example usage:
-a = 5
-e = 17
-n = 13
+a = 9112655597
+e = 2336853847
+n = 3179736385
 # r = 2 ** (len(bin(n)) - 2) # r = 2^(number of bits in n)
 r = 1
 while r < n:
     r <<= 1
-result = ModExp(a, e, n)
-print("Result:", result)
-print(montgomery_modular_exponentiation(a,e,n))
-print(power(a,e,n))
-print(mon_mod_exp(a,e,n,r))
+
+# print(montgomery_modular_exponentiation(a,e,n))
+# print(power(a,e,n))
+# print(mon_mod_exp(a,e,n,r))
+
+# the following test proved that egcd functions are correct
+# for i in range(10):
+#     a = random.randint(0,30)
+#     b = random.randint(0,40)
+#     print(a,b)
+#     print(egcd(a,b))
+#     print(gcdExtended(a,b))
+#     print(extended_gcd(a,b))
+#     print("-----------------------------------------")
+
+monPro_test = {(3,3):3, (8,8):4, (4,4):1, (7,7):12, (8,3):8, (8,1):7}
+n=13
+r = 1
+while r < n:
+    r <<= 1
+print(r,n)
+gcd, x,y = egcd(r,n)
+print(gcd,x,y)
+n_inv = y
+print("n_inv is", n_inv)
+print("It should be r_inv=9 and n_inv=11")
+for key in monPro_test:   
+    ans = mon_product(key[0],key[1], n, n_inv, r)
+    # print(key, ":", ans)
+    # print(key, ":", monPro_test[key])
+    print(ans == monPro_test[key])
+    # print("-----------------------------------------")
