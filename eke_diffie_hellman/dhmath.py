@@ -102,6 +102,17 @@ def egcd(a, b):
     gcd = b
     return gcd, x, y
 
+
+def find_n_inv(n, r):
+    """
+    Find the modular multiplicative inverse of n modulo r satisfying r * r_inv - n * n_inv = 1.
+    """
+    gcd, x, y = extended_gcd(n,r)
+    if gcd != 1:
+        raise ValueError(f"The modular inverse does not exist for {a} modulo {m}.")
+    
+    return (-x)%r
+
 # This also works
 def gcdExtended(a, b):
  
@@ -196,10 +207,14 @@ n=13
 r = 1
 while r < n:
     r <<= 1
-print(r,n)
-gcd, x,y = egcd(r,n)
-print(gcd,x,y)
-n_inv = y
+# print(r,n)
+# gcd, x,y = extended_gcd(r,n)
+# print(gcd,x,y)
+# n_inv = (-y)%r
+# r_inv = x%r
+n_inv = find_n_inv(n,r)
+# n_inv = find_n_inv(n,r)
+# n_inv, y = mod_inverse(n,r)
 print("n_inv is", n_inv)
 print("It should be r_inv=9 and n_inv=11")
 for key in monPro_test:   
