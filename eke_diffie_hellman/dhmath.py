@@ -102,11 +102,28 @@ def egcd(a, b):
     gcd = b
     return gcd, x, y
 
+# This also works
+# def gcdExtended(a, b):
+ 
+#     # Base Case
+#     if a == 0:
+#         return b, 0, 1
+ 
+#     gcd, x1, y1 = gcdExtended(b % a, a)
+ 
+#     # Update x and y using results of recursive
+#     # call
+#     x = y1 - (b//a) * x1
+#     y = x1
+ 
+#     return gcd, x, y
+
 # montgomery product
 def mon_product(A,B,n,N,r):
     t = (A * B) % r
     m = (t * N) % r
-    U = ((A * B) + (m * n)) // r
+    # U = ((A * B) + (m * n)) // r 
+    U = (t + m * n) // r
     if U>=n:
         return U-n
     else:
@@ -121,26 +138,93 @@ def mon_product(A,B,n,N,r):
 #     print("u", u)
 #     return u
 
-def mon_mod_exp(base, exp, n,k):
-    # k is the number of bits
-    r = 2**k
+def mon_mod_exp(base, exp, n, r):
     gcd, x,y = egcd(r,n)
-    n_prime = -y
-    r_prime = x
-    print(n, n_prime, r, r_prime)
+    if gcd != 1:
+        return False
+    # n_inv = -y
+    n_inv = y
     M = (base*r) % n
     X = r % n
-    print(M,X)
-    # for i in range(k-1,0,-1):
-    while exp>0:
-        print(x)
-        x = mon_product(X,X, n, n_prime,r)
-        if exp%2 == 1:
-            print(X)
-            X = mon_product(M,X, n, n_prime,r)
-        exp = exp//2
-    print(x)
-    x = mon_product(X,1, n, n_prime,r)
+    length = len(bin(exp))-3
+    for i in range(length,-1,-1):
+        X = mon_product(X,X, n, n_inv,r)
+        if (exp >> i) & 1:
+            X = mon_product(M,X, n, n_inv,r)
+    x = mon_product(X,1, n, n_inv,r)
     return x
 
-print(mon_mod_exp(3,4,7,2))
+# print(mon_mod_exp(3,4,7,2))
+###############################################
+#chatgpt version
+
+def extended_gcd(a, b):
+    """
+    Extended Euclidean Algorithm
+    Returns (gcd, x, y) where gcd is the greatest common divisor of a and b,
+    and x, y are coefficients such that gcd = ax + by.
+    """
+    if a == 0:
+        return (b, 0, 1)
+    else:
+        gcd, x, y = extended_gcd(b % a, a)
+        return (gcd, y - (b // a) * x, x)
+
+def montgomery_reduction(t, n, n_inv, r):
+    """
+    Montgomery reduction
+    Returns t * r^(-1) mod n.
+    """
+    m = (t * n_inv) % r
+    u = (t + m * n) // r
+    return u if u < n else u - n
+
+def MonPro(a, b, n, n_inv, r):
+    """
+    Montgomery multiplication
+    Returns a * b * r^(-1) mod n.
+    """
+    t = (a * b) % r
+    return montgomery_reduction(t, n, n_inv, r)
+
+def ModExp(a, e, n):
+    """
+    Modular exponentiation using Montgomery multiplication
+    Returns a^e mod n.
+    """
+    # Step 1: Compute n using the extended Euclidean algorithm
+    _, _, n_inv = extended_gcd(n, 1)
+    
+    # Step 2: Compute a * r mod n
+    a = (a * r) % n
+
+    # Step 3: Initialize x = 1 * r mod n
+    x = r % n
+
+    # Step 4: Loop over each bit of the exponent e
+    for i in range(len(bin(e)) - 2, -1, -1):
+        # Step 5: Square x
+        x = MonPro(x, x, n, n_inv, r)
+        
+        # Step 6: If the ith bit of e is 1, multiply x by a
+        if (e >> i) & 1:
+            x = MonPro(a, x, n, n_inv, r)
+
+    # Step 7: Final Montgomery multiplication
+    x = MonPro(1, x, n, n_inv, r)
+
+    return x
+
+# Example usage:
+a = 5
+e = 17
+n = 13
+# r = 2 ** (len(bin(n)) - 2) # r = 2^(number of bits in n)
+r = 1
+while r < n:
+    r <<= 1
+result = ModExp(a, e, n)
+print("Result:", result)
+print(montgomery_modular_exponentiation(a,e,n))
+print(power(a,e,n))
+print(mon_mod_exp(a,e,n,r))
