@@ -152,7 +152,7 @@ TODO
 
 Immediate TODO
     - add encryption to send/receive message functions
-    - incorporate new exponent function into the code
+    - incorporate new exponent function into the code - DONE
     - refine time script (loop) and run it. Try to make graph
 
 Order of TODO
@@ -167,4 +167,9 @@ preliminaries - name for mathematical concepts - DONE
 diffie hellman then EKE - change order - DONE
 name implementation something else
 
-command - bash
+command to run linux - bash
+
+TODO for this week
+    - write about egcd
+    - generate some time graphs
+    - aim to start writing about security next week

@@ -174,7 +174,6 @@ def mon_mod_exp(base, exp, n, r):
     if gcd != 1:
         return False
     n_inv = -y
-    # n_inv = y
     M = (base*r) % n
     X = r % n
     length = len(bin(exp))-3
