@@ -36,7 +36,7 @@ def montgomery_modular_exponentiation(base, exponent, modulus):
 
     return result
 
-def miller_rabin_test(n, k=5):
+def miller_rabin_test(n,exponentiation_term,k=5):
     """
     Miller-Rabin primality test.
     
@@ -63,12 +63,14 @@ def miller_rabin_test(n, k=5):
     # Witness loop
     for _ in range(k):
         a = random.randint(2, n - 2)
-        x = montgomery_modular_exponentiation(a, d, n)
+        # x = montgomery_modular_exponentiation(a, d, n)
+        x = mon_mod_exp(a,d,n,exponentiation_term)
         if x == 1 or x == n - 1:
 			# This is the case when we can not determine if the number is prime or not
             continue
         for _ in range(r - 1):
-            x = montgomery_modular_exponentiation(x, 2, n)
+            # x = montgomery_modular_exponentiation(x, 2, n)
+            x = mon_mod_exp(x,2,n,exponentiation_term)
 			# if x == 1:
 			# 	return False
             if x == n - 1:
@@ -80,12 +82,15 @@ def miller_rabin_test(n, k=5):
 
 def get_safe_prime(q):
 	# if q is Sophie Germain Prime, return 2q+1 (safe prime)
-	p = (2*q)+ 1
-	if miller_rabin_test(p):
-		return p
-	else:
-		print("not prime")
-		return -1
+    p = (2*q)+ 1
+    r = 1
+    while r < p:
+        r <<= 1
+    if miller_rabin_test(p, r):
+        return p
+    else:
+        print("not prime")
+        return -1
 
 
 # Extended Euclidean Algorithm
@@ -183,18 +188,18 @@ def mon_mod_exp(base, exp, n, r):
 
 
 
-# Example usage:
-a = 9112655597874655748395
-e = 23368538474983658027504
-n = 317973638576439257895405
-# r = 2 ** (len(bin(n)) - 2) # r = 2^(number of bits in n)
-r = 1
-while r < n:
-    r <<= 1
+# # Example usage:
+# a = 9112655597874655748395
+# e = 23368538474983658027504
+# n = 317973638576439257895405
+# # r = 2 ** (len(bin(n)) - 2) # r = 2^(number of bits in n)
+# r = 1
+# while r < n:
+#     r <<= 1
 
-print(montgomery_modular_exponentiation(a,e,n))
-print(power(a,e,n))
-print(mon_mod_exp(a,e,n,r))
+# print(montgomery_modular_exponentiation(a,e,n))
+# print(power(a,e,n))
+# print(mon_mod_exp(a,e,n,r))
 
 ###############################################
 # the following test proved that egcd functions are correct

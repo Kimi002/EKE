@@ -128,6 +128,7 @@ explain to someone who does not know - expand on definitions etc
 Evaluation
 time , efficiency, make graph of runtime
 vary parameter sizes and measure
+vary exponent function
 
 run many times, store in table, plot - return average time for 1 parameter size
 PGF plots latex - feed table to make graph
@@ -145,18 +146,19 @@ TODO
     - explain security - proof, properties etc
     - evaluation - script and graph
     - expand on everything - include definitions etc.
-    - exponent function
+    - exponent function - write about it
     - can expand on cryptographic primitives
     - can say why I chose Diffie-Hellman over RSA
 
 Immediate TODO
     - add encryption to send/receive message functions
+    - incorporate new exponent function into the code
+    - refine time script (loop) and run it. Try to make graph
 
 Order of TODO
     - explain implementation - DONE
-    - evaluation
+    - evaluation - also measure with different exponent functions
     - Security
-    - exponent - affecting runtime
     - handle when different key/ challenge fails
 
 ------------------------------------------------
@@ -164,3 +166,5 @@ Meeting - 16/02/24
 preliminaries - name for mathematical concepts - DONE
 diffie hellman then EKE - change order - DONE
 name implementation something else
+
+command - bash
