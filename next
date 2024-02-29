@@ -137,18 +137,16 @@ Stop working on code. Improve report. Research on everything and explain to some
 
 ------------------------------------------------------------------
 TODO
-    - TLS - DONE
     - References
-    - Move DH to background - DONE
-    - explain parameter math in detail - DONE
     - fix math notation - DONE
     - rename sections
     - explain security - proof, properties etc
     - evaluation - script and graph
     - expand on everything - include definitions etc.
-    - exponent function - write about it
     - can expand on cryptographic primitives
     - can say why I chose Diffie-Hellman over RSA
+    - can talk about storing the key after generation
+    - mod takes different time. Might be vulnerable to time analysis attack.
 
 Immediate TODO
     - add encryption to send/receive message functions
@@ -170,6 +168,5 @@ name implementation something else
 command to run linux - bash
 
 TODO for this week
-    - write about egcd
     - generate some time graphs
     - aim to start writing about security next week
