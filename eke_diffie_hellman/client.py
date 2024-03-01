@@ -31,6 +31,15 @@ class EKE(JsonClient):
             print(self.data["message"])
         else:
             print("Failed to register user.")
+    
+    def check_user(self):
+        self.send_json(
+            action="check_user",
+            username=self.username,
+            pwd = self.password,
+            )
+        self.recv_json()
+        assert self.data["success"], "Wrong Username or Password"
 
 
     def negotiate(self):
@@ -43,6 +52,7 @@ class EKE(JsonClient):
 
 
         user1 = DiffieHellman(a1,g,p)
+        self.user = user1
         print("p", user1.p)
         print("g", user1.g)
         pub_key = user1.gen() # public key
@@ -76,6 +86,7 @@ class EKE(JsonClient):
 
         dh_secret_key = user1.get_dh_exchange_key(server_key) # secret exchange key
         R = user1.get_AES_key()
+        self.kdf_encryption_key = R
         print("client's public key is", pub_key)
         print("server's public key is", server_key)
         print("common secret key", dh_secret_key)
@@ -121,10 +132,16 @@ class EKE(JsonClient):
         self.R = R
 
     def send_message(self, message: str):
-        encoded_message = message # no encryption for now
+        # encoded_message = message # no encryption for now
+
+        message_bytes = bytes(message, 'utf-8')
+        encoded_message, iv_encrypt = self.user.encrypt(self.kdf_encryption_key ,message_bytes)
+
         self.send_json(
             action="send_message",
             message=encoded_message,
+            iv = b64e(iv_encrypt),
+            username = self.username
         )
     
 
@@ -171,6 +188,7 @@ def main():
             if action == "register":
                 eke.register()
             else:
+                eke.check_user()
                 eke.negotiate()
                 msg = input("message: ")
                 eke.send_message(msg)

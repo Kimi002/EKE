@@ -151,7 +151,7 @@ TODO
 Immediate TODO
     - add encryption to send/receive message functions
     - incorporate new exponent function into the code - DONE
-    - refine time script (loop) and run it. Try to make graph
+    - refine time script (loop) and run it. Try to make graph - DONE
 
 Order of TODO
     - explain implementation - DONE
@@ -168,5 +168,11 @@ name implementation something else
 command to run linux - bash
 
 TODO for this week
-    - generate some time graphs
+    - generate some time graphs - DONE
     - aim to start writing about security next week
+
+-----------------------------------------------------------------
+Meeting 01/03/2024
+
+- make prelim a section in background
+- put some sentences for safe prime etc

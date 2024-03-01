@@ -1,4 +1,30 @@
-It took 2.740 seconds.
-It took 16.328 seconds.
-It took 3.617 seconds.
-8.623 seconds.
+3.699 seconds.
+2.496 seconds.
+4.296 seconds.
+10.010 seconds.
+8.277 seconds.
+7.146 seconds.
+6.463 seconds.
+12.351 seconds.
+4.257 seconds.
+6.640 seconds.
+4.337 seconds.
+14.593 seconds.
+3.718 seconds.
+14.938 seconds.
+9.536 seconds.
+6.075 seconds.
+6.954 seconds.
+12.870 seconds.
+4.704 seconds.
+1.961 seconds.
+10.572 seconds.
+13.593 seconds.
+7.218 seconds.
+6.630 seconds.
+7.209 seconds.
+12.494 seconds.
+1.973 seconds.
+10.021 seconds.
+7.760 seconds.
+2.733 seconds.
