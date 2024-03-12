@@ -17,11 +17,11 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
     database_params = {}
 
     def handle(self):
+        # handle messages from client
         self.recv_json()
 
         try:
             action = self.data["action"]
-            print(action)
             if action == "register":
                 self.handle_eke_register()
             elif action == "check_user":
@@ -34,17 +34,19 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
                 self.send_json(error=f"Unrecognised action: {action}")
         except KeyError:
             if "success" not in self.data:
-                raise
-
-            success = self.data["success"]
-            if "message" in self.data:
-                message = self.data["message"]
-                print(f"Caught exception: {success = } - {message}")
+                # raise
+                print("Something went wrong")
+            
             else:
-                print(f"Caught exception: success={success}")
+                success = self.data["success"]
+                if "message" in self.data:
+                    message = self.data["message"]
+                    print(f"Caught exception: {success = } - {message}")
+                else:
+                    print(f"Caught exception: success={success}")
 
     def handle_eke_register(self):
-
+        # register a user with the server
         user = self.data["username"]
         passwd = self.data["password"]
 
@@ -57,6 +59,7 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         self.send_json(success=True, message=f"Successfully registered user {user}")
 
     def check_user(self):
+        # check whether username and password are correct
         if self.data['username'] not in self.database:
             print("Not registered")
             self.send_json(success=False)
@@ -68,12 +71,9 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
 
 
     def handle_eke_negotiate_key(self):
+        # Function to generate the shared secret key
 
-        # set the salt which is later used for key derivation
-        # salt = os.urandom(16)
-        # DiffieHellman.salt = salt
-
-        # get client's public key, p and g
+        # get client's public key, modulus and generator
         encrypted_client_key = b64d(self.data["enc_pub_key"])
         iv_decrypt = b64d(self.data["iv"])
         p = (self.data["modulus"])
@@ -81,33 +81,41 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         username = self.data["username"]
         pwd = self.database[username]
 
-        # P = AES.new(self.database[self.data["username"]].ljust(16).encode(), AES.MODE_ECB)
-        print("p,g,pwd,iv", p,g,pwd,iv_decrypt)
-
-        a2 = getPrime(2048) # secret key
+        # get server's private key
+        a2 = getPrime(2048)
+        # create server object
         user2 = DiffieHellman(a2,g,p)
+        # decrypt client's public key using the shared password
         client_key = user2.decrypt(pwd.ljust(16).encode(), iv_decrypt, encrypted_client_key)
         client_key = b2l(client_key)
 
-        print("p", user2.p)
-        print("g", user2.g)
-        pub_key= user2.gen() # public key
+        print("modulus p")
+        print(hex(user2.p))
+        print()
+        print("generator g")
+        print(hex(user2.g))
+        print()
 
+        # get server's public key
+        pub_key= user2.gen()
+
+        # generate the shared secret key 
         dh_secret_key = user2.get_dh_exchange_key(client_key)
+
+        print("common secret key is - ") 
+        print(hex(dh_secret_key))
         print()
-        print(DiffieHellman.salt)
-        print()
-        R = user2.get_AES_key() # secret exchange key
+
+        # use KDF to get shared key compatible with AES
+        R = user2.get_AES_key()
         self.database_params[username] = (user2, R)
-        print("generated secret key")
 
         encrypted_pub_key, iv_encrypt = user2.encrypt(pwd.ljust(16).encode(), l2b(pub_key))
 
         # send public key to client
         self.send_json(enc_pub_key=encrypted_pub_key, iv=b64e(iv_encrypt))
-        print("client's public key is", client_key)
-        print("server's public key is", pub_key)
-        print("common secret key is", dh_secret_key)
+        # print("client's public key is", client_key)
+        # print("server's public key is", pub_key)
         
         # R = l2b(R,16) # removed this because the key is now generated in bytes. Do not need to convert
 
@@ -115,18 +123,20 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         self.recv_json()
         encypted_challenge_A = b64d(self.data["challenge_a"])
         iv_decrypt = b64d(self.data["iv"])
+        # decrypt using secret key
         challengeA = user2.decrypt(R, iv_decrypt, encypted_challenge_A)
         challengeA = challengeA.decode('utf-8')
-        print(challengeA)
+        print("Challenge A was - ", challengeA)
 
         # send challenge A + challenge B
         challengeB = "byebye"
+        print("Challenge B is - ", challengeB)
         challengeAB = challengeA.ljust(10) + challengeB.ljust(10)
         challengeAB = bytes(challengeAB, 'utf-8')
         encrypted_challenge_B, iv_encrypt = user2.encrypt(R, challengeAB)
         self.send_json(challenge_b=encrypted_challenge_B, iv = b64e(iv_encrypt))
 
-        # receive challengeB back again
+        # receive challengeB back
         self.recv_json()
         encrypted_challenge_B = b64d(self.data["challenge_b"])
         iv_decrypt = b64d(self.data["iv"])
@@ -134,14 +144,14 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         challengeB_decrypted = user2.decrypt(R, iv_decrypt, encrypted_challenge_B)
         challengeB_decrypted = challengeB_decrypted.decode('utf-8')
         success = challengeB_decrypted == challengeB
-
+        # return success if challengeB is the same
         self.send_json(success=success)
         self.R = R
 
     def receive_message(self):
+        # decrypt the message received from the client
         self.recv_json()
         assert self.data["action"] == "send_message"
-        # message = self.data["message"] # no decryption for now
         username = self.data["username"]
         encrypted_message = b64d(self.data["message"])
         iv_decrypt = b64d(self.data["iv"])
@@ -149,7 +159,7 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         message_decrypted = user.decrypt(R, iv_decrypt, encrypted_message)
         message_decrypted = message_decrypted.decode('utf-8')
 
-        print(f"[EKEHandler.receive_message] message=\"{message_decrypted}\"")
+        print(f"Received message from user {username}=\"{message_decrypted}\"")
 
 
 def main():

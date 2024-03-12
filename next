@@ -149,7 +149,7 @@ TODO
     - mod takes different time. Might be vulnerable to time analysis attack.
 
 Immediate TODO
-    - add encryption to send/receive message functions
+    - add encryption to send/receive message functions - DONE
     - incorporate new exponent function into the code - DONE
     - refine time script (loop) and run it. Try to make graph - DONE
 
@@ -174,5 +174,15 @@ TODO for this week
 -----------------------------------------------------------------
 Meeting 01/03/2024
 
-- make prelim a section in background
-- put some sentences for safe prime etc
+- make prelim a section in background - DONE
+- put some sentences for safe prime etc - DONE
+
+Ask
+    - can 200 bit suffice? says in the paper. But computation power different now
+    - did not find proof in the EKE paper. Did not understand. IDK if it is proof or not
+        - this is tacit assumptions section on page 7
+    - Can I use the proof of Diffie Hellman
+        - can not find formal proof
+        - just says because of discrete log
+        - found some mathematical proofs by stanford and a book. Really long.
+    - can i reference cyber security course unit?

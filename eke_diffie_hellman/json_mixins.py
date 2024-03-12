@@ -17,7 +17,10 @@ class JsonServerMixin:
         received = self.request.recv(n).strip().decode()
         if self.__class__.debug_recv:
             print(f"[{self.__class__.__name__}.recv_json()] {received = }")
-        self.data = json.loads(received)
+        try:
+            self.data = json.loads(received)
+        except:
+            self.data = {"success":False}
 
 
     def send_json(self, **kwargs):
@@ -49,7 +52,10 @@ class JsonClient:
         received = self.conn.recv(n).strip().decode()
         if self.debug_recv:
             print(f"[{self.__class__.__name__}.recv_json] {received = }")
-        self.data = json.loads(received)
+        try:
+            self.data = json.loads(received)
+        except:
+            self.data = {"success":False}
 
     def send_json(self, **kwargs):
         """

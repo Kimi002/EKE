@@ -4,6 +4,7 @@ from base64 import b64encode
 def b64e(x):
     return b64encode(x).decode('utf-8')
 
+# square and multiply method
 def power( x, y, p): 
 
 	res = 1 # Initialize result 
@@ -23,6 +24,7 @@ def power( x, y, p):
 
 	return res
 
+# incorrect method - no longer used
 def montgomery_modular_exponentiation(base, exponent, modulus):
     result = 1
     base = (base % modulus + modulus) % modulus
@@ -36,6 +38,7 @@ def montgomery_modular_exponentiation(base, exponent, modulus):
 
     return result
 
+# efficient primality test
 def miller_rabin_test(n,exponentiation_term,k=5):
     """
     Miller-Rabin primality test.
@@ -80,6 +83,7 @@ def miller_rabin_test(n,exponentiation_term,k=5):
 
     return True  # n is likely prime
 
+# Checks if input is Sophie Germain prime and returns the corresponding safe prime
 def get_safe_prime(q):
 	# if q is Sophie Germain Prime, return 2q+1 (safe prime)
     p = (2*q)+ 1
@@ -118,7 +122,7 @@ def find_n_inv(n, r):
     
     return (-x)%r
 
-# This also works
+# Another Extended Euclidean Algorithm
 def gcdExtended(a, b):
  
     # Base Case
@@ -134,6 +138,7 @@ def gcdExtended(a, b):
  
     return gcd, x, y
 
+# Yet another Extended Euclidean Algorithm
 def extended_gcd(a, b):
     """
     Extended Euclidean Algorithm to find modular inverse.
@@ -169,6 +174,7 @@ def mon_product(a_bar,b_bar,n,n_inv,r):
 #     print("u", u)
 #     return u
 
+# Montgomery modular exponentiation - efficient
 def mon_mod_exp(base, exp, n, r):
     gcd, x,y = egcd(r,n)
     if gcd != 1:

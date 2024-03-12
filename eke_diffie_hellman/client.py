@@ -33,34 +33,49 @@ class EKE(JsonClient):
             print("Failed to register user.")
     
     def check_user(self):
-        self.send_json(
-            action="check_user",
-            username=self.username,
-            pwd = self.password,
-            )
-        self.recv_json()
-        assert self.data["success"], "Wrong Username or Password"
+        # check with the server if the username and password entered are correct
+        try:
+            self.send_json(
+                action="check_user",
+                username=self.username,
+                pwd = self.password,
+                )
+            self.recv_json()
+            # assert self.data["success"], "Wrong Username or Password"
+            if not self.data["success"]:
+                print("Wrong Username or Password")
+                sys.exit(-1)
+        except:
+            print("Exception occurred")
+            sys.exit(-1)
 
 
-    def negotiate(self):
+    def exchange(self):
+        # Function to generate the shared secret key
 
         # get diffie hellman parameters
         params = DiffieHellman.get_DH_params()
         p = params["modulus"]
         g = params["generator"]
-        a1 = getPrime(2048) # secret key
+        # get client's private key
+        a1 = getPrime(2048)
 
-
+        # Create user object
         user1 = DiffieHellman(a1,g,p)
         self.user = user1
-        print("p", user1.p)
-        print("g", user1.g)
-        pub_key = user1.gen() # public key
+        print("modulus p")
+        print(hex(user1.p))
+        print()
+        print("generator g")
+        print(hex(user1.g))
+        print()
+        # get client's public key
+        pub_key = user1.gen()
 
-        # # P(Ea)
+        # P(Ea) - encrypted public key
         encrypted_pub_key, iv_encrypt = user1.encrypt(self.password.ljust(16).encode(), l2b(pub_key))
 
-        # send public key P(Ea)
+        # send encrypted public key P(Ea)
         self.send_json(
             action="negotiate",
             username=self.username,
@@ -72,30 +87,36 @@ class EKE(JsonClient):
 
         
         self.recv_json()
-        # recieve public key
+        # recieve server's public key
         encrypted_client_key = b64d(self.data["enc_pub_key"])
         iv_decrypt = b64d(self.data["iv"])
 
-        print()
-        print("salt")
-        print(DiffieHellman.salt)
-        print()
-
+        # print(DiffieHellman.salt)
+        # decrypt server's public key using the password
         server_key = user1.decrypt(self.password.ljust(16).encode(), iv_decrypt, encrypted_client_key)
         server_key = b2l(server_key)
 
-        dh_secret_key = user1.get_dh_exchange_key(server_key) # secret exchange key
+        # generate shared secret key
+        dh_secret_key = user1.get_dh_exchange_key(server_key)
+        # use KDF to get shared key compatible with AES
         R = user1.get_AES_key()
         self.kdf_encryption_key = R
-        print("client's public key is", pub_key)
-        print("server's public key is", server_key)
-        print("common secret key", dh_secret_key)
-
-        # send first challenge
-        # send R(challengeA)
+        # print("client's public key is - ") 
+        # print(hex(pub_key))
+        # print()
+        # print("server's public key is - ")
+        # print(hex(server_key))
+        # print()
+        print("common secret key is - ") 
+        print(hex(dh_secret_key))
+        print()
 
         # R = l2b(R,16) # removed this because the key is now generated in bytes. Do not need to convert
+
+        # send first encrypted challenge
+        # i.e., send R(challengeA)
         challengeA = "hello"
+        print("Challenge A is - ", challengeA)
         challengeA_bytes = bytes(challengeA, 'utf-8')
         encrypted_challenge_A, iv_encrypt = user1.encrypt(R ,challengeA_bytes)
         self.send_json(challenge_a=encrypted_challenge_A, iv = b64e(iv_encrypt))
@@ -108,7 +129,7 @@ class EKE(JsonClient):
 
         challengeAB = user1.decrypt(R, iv_decrypt, encrypted_challenge_AB)
         challengeAB = challengeAB.decode('utf-8')
-        print("challenge response", challengeAB)
+        # print("challenge response - ", challengeAB)
 
         # check challenge A
         challengeA_decrypted = (challengeAB[:10]).strip()
@@ -116,10 +137,10 @@ class EKE(JsonClient):
 
         # get challengeB
         challengeB = challengeAB[10:].strip()
-        print(challengeB)
+        print("Challenge B was - ",challengeB)
 
         # response with challengeB
-        #send R(challengeB)
+        # i.e., send R(challengeB)
         challengeB = bytes(challengeB, 'utf-8')
         encrypted_challenge_B, iv_encrypt = user1.encrypt(R, challengeB)
         self.send_json(challenge_b=encrypted_challenge_B, iv = b64e(iv_encrypt))
@@ -132,8 +153,8 @@ class EKE(JsonClient):
         self.R = R
 
     def send_message(self, message: str):
-        # encoded_message = message # no encryption for now
 
+        # encrypt message using shared secret key and send to server
         message_bytes = bytes(message, 'utf-8')
         encoded_message, iv_encrypt = self.user.encrypt(self.kdf_encryption_key ,message_bytes)
 
@@ -166,7 +187,7 @@ def main():
     debug_send = args.debug & 2 == 2
 
     action = args.action
-    if action not in ["register", "negotiate"]:
+    if action not in ["register", "exchange"]:
         print(f"Unrecognised action: \"{action}\"")
         sys.exit(-1)
 
@@ -188,20 +209,24 @@ def main():
             if action == "register":
                 eke.register()
             else:
+                # validate the user and generate the shared key. Also allow client to sendmessage to the server.
                 eke.check_user()
-                eke.negotiate()
-                msg = input("message: ")
+                eke.exchange()
+                msg = input("Send message to server: ")
                 eke.send_message(msg)
+                print("Message encrypted and sent")
         except KeyError:
             if "success" not in eke.data:
-                raise
-
-            success = eke.data["success"]
-            if "message" in eke.data:
-                message = eke.data["message"]
-                print(f"Caught exception: {success = } - {message}")
+                # raise
+                print("Something went wrong")
+            
             else:
-                print(f"Caught exception: success={success}")
+                success = eke.data["success"]
+                if "message" in eke.data:
+                    message = eke.data["message"]
+                    print(f"Caught exception: {success = } - {message}")
+                else:
+                    print(f"Caught exception: success={success}")
 
 
 if __name__ == "__main__":
