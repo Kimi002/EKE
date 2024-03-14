@@ -4,7 +4,7 @@ import socketserver
 import os
 from eke import *
 from json_mixins import JsonServerMixin
-from dhmath import b64e
+from dhmath import b64e, int_to_base64
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad,unpad
 from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l, getPrime
@@ -13,8 +13,6 @@ from Crypto import Random
 
 
 class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
-    # database = {}
-    # database_params = {}
     server_password = ""
     exchange_key = ""
     user = None
@@ -25,11 +23,6 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
 
         try:
             action = self.data["action"]
-            # if action == "register":
-            #     self.handle_eke_register()
-            # elif action == "check_user":
-            #     self.check_user()
-            #     self.handle()
             if action == "negotiate":
                 self.handle_eke_negotiate_key()
                 self.receive_message()
@@ -48,30 +41,6 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
                 else:
                     print(f"Caught exception: success={success}")
 
-    # def handle_eke_register(self):
-    #     # register a user with the server
-    #     user = self.data["username"]
-    #     passwd = self.data["password"]
-
-    #     if user in self.database:
-    #         self.send_json(success=False, message=f"User already registered")
-    #         return
-
-    #     self.database[user] = passwd
-
-    #     self.send_json(success=True, message=f"Successfully registered user {user}")
-
-    # def check_user(self):
-    #     # check whether username and password are correct
-    #     if self.data['username'] not in self.database:
-    #         print("Not registered")
-    #         self.send_json(success=False)
-    #     elif self.database[self.data['username']] != self.data['pwd']:
-    #         print("Incorrect password")
-    #         self.send_json(success=False)
-    #     else:
-    #         self.send_json(success=True)
-
 
     def handle_eke_negotiate_key(self):
         # Function to generate the shared secret key
@@ -81,8 +50,6 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         iv_decrypt = b64d(self.data["iv"])
         p = (self.data["modulus"])
         g = (self.data["base"])
-        # username = self.data["username"]
-        # pwd = self.database[username]
         pwd = EKEHandler.server_password
 
         # get server's private key
@@ -94,10 +61,10 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         client_key = b2l(client_key)
 
         print("modulus p")
-        print(hex(user2.p))
+        print(int_to_base64(user2.p))
         print()
         print("generator g")
-        print(hex(user2.g))
+        print(int_to_base64(user2.g))
         print()
 
         # get server's public key
@@ -107,12 +74,11 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         dh_secret_key = user2.get_dh_exchange_key(client_key)
 
         print("common secret key is - ") 
-        print(hex(dh_secret_key))
+        print(int_to_base64(dh_secret_key))
         print()
 
         # use KDF to get shared key compatible with AES
         R = user2.get_AES_key()
-        # self.database_params[username] = (user2, R)
         EKEHandler.exchange_key = R
         EKEHandler.user = user2
 

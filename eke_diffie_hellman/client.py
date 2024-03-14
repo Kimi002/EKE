@@ -7,7 +7,7 @@ import socket
 import sys
 from eke import *
 from json_mixins import JsonClient
-from dhmath import b64e
+from dhmath import b64e, int_to_base64
 import random
 from base64 import b64decode as b64d
 from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l, getPrime
@@ -17,37 +17,8 @@ class EKE(JsonClient):
     def __init__(self, password, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # self.username = username
         self.password = password
 
-
-    # def register(self):
-    #     # send a register command
-    #     self.send_json(action="register", username=self.username, password=self.password)
-
-    #     # receive the status back
-    #     self.recv_json()
-    #     if self.data["success"]:
-    #         print(self.data["message"])
-    #     else:
-    #         print("Failed to register user.")
-    
-    # def check_user(self):
-    #     # check with the server if the username and password entered are correct
-    #     try:
-    #         self.send_json(
-    #             action="check_user",
-    #             username=self.username,
-    #             pwd = self.password,
-    #             )
-    #         self.recv_json()
-    #         # assert self.data["success"], "Wrong Username or Password"
-    #         if not self.data["success"]:
-    #             print("Wrong Username or Password")
-    #             sys.exit(-1)
-    #     except:
-    #         print("Exception occurred")
-    #         sys.exit(-1)
 
 
     def exchange(self):
@@ -64,10 +35,10 @@ class EKE(JsonClient):
         user1 = DiffieHellman(a1,g,p)
         self.user = user1
         print("modulus p")
-        print(hex(user1.p))
+        print(int_to_base64(user1.p))
         print()
         print("generator g")
-        print(hex(user1.g))
+        print(int_to_base64(user1.g))
         print()
         # get client's public key
         pub_key = user1.gen()
@@ -108,7 +79,7 @@ class EKE(JsonClient):
         # print(hex(server_key))
         # print()
         print("common secret key is - ") 
-        print(hex(dh_secret_key))
+        print(int_to_base64(dh_secret_key))
         print()
 
         # R = l2b(R,16) # removed this because the key is now generated in bytes. Do not need to convert
@@ -204,14 +175,12 @@ def main():
         print(f"Unrecognised action: \"{action}\"")
         sys.exit(-1)
 
-    # username = args.user if args.user else input("Username: ")
-    password = args.passwd if args.passwd else getpass.getpass("Password: ")
+    password = args.passwd if args.passwd else input("Password: ")
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((HOST, PORT))
 
         eke = EKE(
-            # username,
             password,
             conn=sock,
             debug_send=debug_send,

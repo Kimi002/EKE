@@ -1,5 +1,13 @@
 import random
 from base64 import b64encode
+import base64
+
+def int_to_base64(num):
+    # Convert integer to bytes
+    num_bytes = num.to_bytes((num.bit_length() + 7) // 8, byteorder='big')
+    # Encode bytes to base64
+    base64_encoded = base64.b64encode(num_bytes)
+    return base64_encoded.decode('utf-8')
 
 def b64e(x):
     return b64encode(x).decode('utf-8')
