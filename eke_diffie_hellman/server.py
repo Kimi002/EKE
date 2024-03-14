@@ -13,8 +13,11 @@ from Crypto import Random
 
 
 class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
-    database = {}
-    database_params = {}
+    # database = {}
+    # database_params = {}
+    server_password = ""
+    exchange_key = ""
+    user = None
 
     def handle(self):
         # handle messages from client
@@ -22,12 +25,12 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
 
         try:
             action = self.data["action"]
-            if action == "register":
-                self.handle_eke_register()
-            elif action == "check_user":
-                self.check_user()
-                self.handle()
-            elif action == "negotiate":
+            # if action == "register":
+            #     self.handle_eke_register()
+            # elif action == "check_user":
+            #     self.check_user()
+            #     self.handle()
+            if action == "negotiate":
                 self.handle_eke_negotiate_key()
                 self.receive_message()
             else:
@@ -45,29 +48,29 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
                 else:
                     print(f"Caught exception: success={success}")
 
-    def handle_eke_register(self):
-        # register a user with the server
-        user = self.data["username"]
-        passwd = self.data["password"]
+    # def handle_eke_register(self):
+    #     # register a user with the server
+    #     user = self.data["username"]
+    #     passwd = self.data["password"]
 
-        if user in self.database:
-            self.send_json(success=False, message=f"User already registered")
-            return
+    #     if user in self.database:
+    #         self.send_json(success=False, message=f"User already registered")
+    #         return
 
-        self.database[user] = passwd
+    #     self.database[user] = passwd
 
-        self.send_json(success=True, message=f"Successfully registered user {user}")
+    #     self.send_json(success=True, message=f"Successfully registered user {user}")
 
-    def check_user(self):
-        # check whether username and password are correct
-        if self.data['username'] not in self.database:
-            print("Not registered")
-            self.send_json(success=False)
-        elif self.database[self.data['username']] != self.data['pwd']:
-            print("Incorrect password")
-            self.send_json(success=False)
-        else:
-            self.send_json(success=True)
+    # def check_user(self):
+    #     # check whether username and password are correct
+    #     if self.data['username'] not in self.database:
+    #         print("Not registered")
+    #         self.send_json(success=False)
+    #     elif self.database[self.data['username']] != self.data['pwd']:
+    #         print("Incorrect password")
+    #         self.send_json(success=False)
+    #     else:
+    #         self.send_json(success=True)
 
 
     def handle_eke_negotiate_key(self):
@@ -78,8 +81,9 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         iv_decrypt = b64d(self.data["iv"])
         p = (self.data["modulus"])
         g = (self.data["base"])
-        username = self.data["username"]
-        pwd = self.database[username]
+        # username = self.data["username"]
+        # pwd = self.database[username]
+        pwd = EKEHandler.server_password
 
         # get server's private key
         a2 = getPrime(2048)
@@ -108,7 +112,9 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
 
         # use KDF to get shared key compatible with AES
         R = user2.get_AES_key()
-        self.database_params[username] = (user2, R)
+        # self.database_params[username] = (user2, R)
+        EKEHandler.exchange_key = R
+        EKEHandler.user = user2
 
         encrypted_pub_key, iv_encrypt = user2.encrypt(pwd.ljust(16).encode(), l2b(pub_key))
 
@@ -125,15 +131,35 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         iv_decrypt = b64d(self.data["iv"])
         # decrypt using secret key
         challengeA = user2.decrypt(R, iv_decrypt, encypted_challenge_A)
-        challengeA = challengeA.decode('utf-8')
+        try:
+            challengeA = challengeA.decode('utf-8')
+            A_success = True
+        except:
+            print("Could not decrypt challenge A to text")
+            A_success = False
         print("Challenge A was - ", challengeA)
-
-        # send challenge A + challenge B
         challengeB = "byebye"
         print("Challenge B is - ", challengeB)
-        challengeAB = challengeA.ljust(10) + challengeB.ljust(10)
-        challengeAB = bytes(challengeAB, 'utf-8')
-        encrypted_challenge_B, iv_encrypt = user2.encrypt(R, challengeAB)
+
+        # send challenge A + challenge B
+        if A_success:
+            challengeAB = challengeA.ljust(10) + challengeB.ljust(10)
+            challengeAB = bytes(challengeAB, 'utf-8')
+            encrypted_challenge_B, iv_encrypt = user2.encrypt(R, challengeAB)
+        else:
+            challengeA_bytes = challengeA
+            challengeB_bytes = bytes(challengeB, 'utf-8')
+
+            # Padding both challenges separately to a length of 10 bytes
+            challengeA_padded = challengeA_bytes.ljust(10)
+            challengeB_padded = challengeB_bytes.ljust(10)
+
+            # Combine the padded challenges
+            challengeAB_bytes = challengeA_padded + challengeB_padded
+
+            # Encrypt the combined challenges
+            encrypted_challenge_B, iv_encrypt = user2.encrypt(R, challengeAB_bytes)
+
         self.send_json(challenge_b=encrypted_challenge_B, iv = b64e(iv_encrypt))
 
         # receive challengeB back
@@ -142,8 +168,15 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         iv_decrypt = b64d(self.data["iv"])
 
         challengeB_decrypted = user2.decrypt(R, iv_decrypt, encrypted_challenge_B)
-        challengeB_decrypted = challengeB_decrypted.decode('utf-8')
+        try:
+            challengeB_decrypted = challengeB_decrypted.decode('utf-8')
+        except:
+            print("Could not decrypt response to challengeB")
         success = challengeB_decrypted == challengeB
+        if success:
+            print("Challenge succeeded")
+        else:
+            print("Challenge failed")
         # return success if challengeB is the same
         self.send_json(success=success)
         self.R = R
@@ -152,14 +185,16 @@ class EKEHandler(socketserver.BaseRequestHandler, JsonServerMixin):
         # decrypt the message received from the client
         self.recv_json()
         assert self.data["action"] == "send_message"
-        username = self.data["username"]
+        # username = self.data["username"]
         encrypted_message = b64d(self.data["message"])
         iv_decrypt = b64d(self.data["iv"])
-        user, R = self.database_params[username]
+        # user, R = self.database_params[username]
+        R = EKEHandler.exchange_key
+        user = EKEHandler.user
         message_decrypted = user.decrypt(R, iv_decrypt, encrypted_message)
         message_decrypted = message_decrypted.decode('utf-8')
 
-        print(f"Received message from user {username}=\"{message_decrypted}\"")
+        print(f"Received message from user=\"{message_decrypted}\"")
 
 
 def main():
@@ -171,6 +206,10 @@ def main():
     EKEHandler.debug_send = DEBUG & 2 == 2
 
     socketserver.TCPServer.allow_reuse_address = True
+
+    pwd = input("Enter password: ")
+    EKEHandler.server_password = pwd
+
     try:
         with socketserver.TCPServer((HOST, PORT), EKEHandler) as server:
             server.serve_forever()

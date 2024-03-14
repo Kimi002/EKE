@@ -52,8 +52,13 @@ class DiffieHellman:
 
     def decrypt(self, secret_key_bytes, iv, decryption_bytes):
         # decrypt given message using given key with AES in CBC mode
+        
         R_decrypt = AES.new(secret_key_bytes, AES.MODE_CBC, iv)
-        decrypted_bytes = unpad(R_decrypt.decrypt(decryption_bytes), AES.block_size)
+        decrypted_bytes = R_decrypt.decrypt(decryption_bytes)
+        try:
+            decrypted_bytes = unpad(decrypted_bytes, AES.block_size)
+        except:
+            pass
 
         return decrypted_bytes
     

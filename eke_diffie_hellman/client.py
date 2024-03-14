@@ -14,40 +14,40 @@ from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l, getPr
 
 
 class EKE(JsonClient):
-    def __init__(self, username, password, *args, **kwargs):
+    def __init__(self, password, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.username = username
+        # self.username = username
         self.password = password
 
 
-    def register(self):
-        # send a register command
-        self.send_json(action="register", username=self.username, password=self.password)
+    # def register(self):
+    #     # send a register command
+    #     self.send_json(action="register", username=self.username, password=self.password)
 
-        # receive the status back
-        self.recv_json()
-        if self.data["success"]:
-            print(self.data["message"])
-        else:
-            print("Failed to register user.")
+    #     # receive the status back
+    #     self.recv_json()
+    #     if self.data["success"]:
+    #         print(self.data["message"])
+    #     else:
+    #         print("Failed to register user.")
     
-    def check_user(self):
-        # check with the server if the username and password entered are correct
-        try:
-            self.send_json(
-                action="check_user",
-                username=self.username,
-                pwd = self.password,
-                )
-            self.recv_json()
-            # assert self.data["success"], "Wrong Username or Password"
-            if not self.data["success"]:
-                print("Wrong Username or Password")
-                sys.exit(-1)
-        except:
-            print("Exception occurred")
-            sys.exit(-1)
+    # def check_user(self):
+    #     # check with the server if the username and password entered are correct
+    #     try:
+    #         self.send_json(
+    #             action="check_user",
+    #             username=self.username,
+    #             pwd = self.password,
+    #             )
+    #         self.recv_json()
+    #         # assert self.data["success"], "Wrong Username or Password"
+    #         if not self.data["success"]:
+    #             print("Wrong Username or Password")
+    #             sys.exit(-1)
+    #     except:
+    #         print("Exception occurred")
+    #         sys.exit(-1)
 
 
     def exchange(self):
@@ -78,7 +78,7 @@ class EKE(JsonClient):
         # send encrypted public key P(Ea)
         self.send_json(
             action="negotiate",
-            username=self.username,
+            # username=self.username,
             enc_pub_key=encrypted_pub_key,
             iv=b64e(iv_encrypt),
             modulus=user1.p,
@@ -128,27 +128,40 @@ class EKE(JsonClient):
         iv_decrypt = b64d(self.data["iv"])
 
         challengeAB = user1.decrypt(R, iv_decrypt, encrypted_challenge_AB)
-        challengeAB = challengeAB.decode('utf-8')
+        try:
+            challengeAB = challengeAB.decode('utf-8')
+            a_success = True
+        except:
+            print("Could not decrypt response to challengeA")
+            a_success = False
         # print("challenge response - ", challengeAB)
+        
+        if a_success:
+            # check challenge A
+            challengeA_decrypted = (challengeAB[:10]).strip()
+            # assert challengeA_decrypted == challengeA, "Challenge A failed."
+            if (challengeA_decrypted != challengeA):
+                print("Challenge A failed")
 
-        # check challenge A
-        challengeA_decrypted = (challengeAB[:10]).strip()
-        assert challengeA_decrypted == challengeA, "Challenge A failed."
+            # get challengeB
+            challengeB = challengeAB[10:].strip()
+            print("Challenge B was - ",challengeB)
 
-        # get challengeB
-        challengeB = challengeAB[10:].strip()
-        print("Challenge B was - ",challengeB)
-
-        # response with challengeB
-        # i.e., send R(challengeB)
-        challengeB = bytes(challengeB, 'utf-8')
+            # response with challengeB
+            # i.e., send R(challengeB)
+            challengeB = bytes(challengeB, 'utf-8')
+        else:
+            challengeB = challengeAB[10:]
+            print("Challenge B was - ",challengeB)
         encrypted_challenge_B, iv_encrypt = user1.encrypt(R, challengeB)
         self.send_json(challenge_b=encrypted_challenge_B, iv = b64e(iv_encrypt))
 
         # receive success message
         self.recv_json()
-        assert self.data["success"], self.data.get("message", "ChallengeB failed.")
-
+        # assert self.data["success"], self.data.get("message", "ChallengeB failed.")
+        if (not self.data["success"]):
+            print("Challenges failed.")
+            sys.exit(-1)
         # store the shared key
         self.R = R
 
@@ -162,7 +175,7 @@ class EKE(JsonClient):
             action="send_message",
             message=encoded_message,
             iv = b64e(iv_encrypt),
-            username = self.username
+            # username = self.username
         )
     
 
@@ -187,18 +200,18 @@ def main():
     debug_send = args.debug & 2 == 2
 
     action = args.action
-    if action not in ["register", "exchange"]:
+    if action not in ["exchange"]:
         print(f"Unrecognised action: \"{action}\"")
         sys.exit(-1)
 
-    username = args.user if args.user else input("Username: ")
+    # username = args.user if args.user else input("Username: ")
     password = args.passwd if args.passwd else getpass.getpass("Password: ")
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((HOST, PORT))
 
         eke = EKE(
-            username,
+            # username,
             password,
             conn=sock,
             debug_send=debug_send,
@@ -206,11 +219,9 @@ def main():
         )
 
         try:
-            if action == "register":
-                eke.register()
-            else:
+            if action == "exchange":
                 # validate the user and generate the shared key. Also allow client to sendmessage to the server.
-                eke.check_user()
+                # eke.check_user()
                 eke.exchange()
                 msg = input("Send message to server: ")
                 eke.send_message(msg)
